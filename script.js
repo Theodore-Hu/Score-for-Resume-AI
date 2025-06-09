@@ -595,11 +595,475 @@ class ResumeScoreApp {
         return '#e53e3e';
     }
     
-    // 其他方法保持不变...
-    updateDetailedScores(categoryScores, specializations) {
-        // 详细评分更新逻辑保持不变
-        // ... (这里是之前的详细评分代码，保持不变)
+    updateDetailedScores(categoryScores, specializations = []) {
         console.log('Updating detailed scores with AI enhancement flags');
+        
+        const container = document.getElementById('scoreCategories');
+        if (!container) {
+            console.error('Score categories container not found');
+            return;
+        }
+        
+        container.innerHTML = '';
+        
+        // 类别映射和图标
+        const categoryConfig = {
+            basicInfo: {
+                name: '基本信息',
+                icon: '📋',
+                maxScore: 10,
+                color: '#48bb78'
+            },
+            education: {
+                name: '教育背景',
+                icon: '🎓',
+                maxScore: 25,
+                color: '#667eea'
+            },
+            skills: {
+                name: '专业技能',
+                icon: '🔧',
+                maxScore: 20,
+                color: '#ed8936'
+            },
+            experience: {
+                name: '实践经验',
+                icon: '💼',
+                maxScore: 30,
+                color: '#9f7aea'
+            },
+            achievements: {
+                name: '奖励荣誉',
+                icon: '🏆',
+                maxScore: 15,
+                color: '#f56565'
+            }
+        };
+        
+        // 检查是否有专精加成
+        const specializationMap = {};
+        if (specializations && Array.isArray(specializations)) {
+            specializations.forEach(spec => {
+                if (spec.category && spec.type) {
+                    const key = `${spec.category}-${spec.type}`;
+                    specializationMap[key] = spec;
+                }
+            });
+        }
+        
+        // 渲染每个类别
+        Object.entries(categoryScores).forEach(([category, scoreData]) => {
+            const config = categoryConfig[category];
+            if (!config) return;
+            
+            const scoreItem = document.createElement('div');
+            scoreItem.className = 'score-item';
+            
+            // 检查是否有AI增强
+            const hasAIEnhancement = this.currentAnalysis && this.currentAnalysis.analysis && this.currentAnalysis.analysis.aiEnhanced;
+            if (hasAIEnhancement) {
+                scoreItem.classList.add('ai-enhanced');
+            }
+            
+            const score = typeof scoreData === 'object' ? scoreData.total : scoreData;
+            const maxScore = config.maxScore;
+            
+            // 计算进度百分比
+            const baseScore = Math.min(score, maxScore);
+            const basePercentage = (baseScore / maxScore) * 100;
+            const bonusScore = Math.max(0, score - maxScore);
+            const bonusPercentage = bonusScore > 0 ? Math.min((bonusScore / maxScore) * 100, 30) : 0;
+            
+            // 检查是否有专精
+            const hasSpecialization = Object.keys(specializationMap).some(key => 
+                key.includes(category) || (category === 'skills' && key.includes('skill'))
+            );
+            
+            scoreItem.innerHTML = `
+                <div class="main-score-row">
+                    <div class="category-name">
+                        <span>${config.icon}</span>
+                        <span>${config.name}</span>
+                        ${hasAIEnhancement ? '<span class="ai-enhanced-tag">AI</span>' : ''}
+                        ${hasSpecialization ? '<span class="specialization-badge">专精</span>' : ''}
+                    </div>
+                    
+                    <div class="score-right-section">
+                        <div class="progress-container">
+                            <div class="progress-bar-wrapper">
+                                <div class="progress-bar">
+                                    <div class="progress-fill base-progress" style="width: ${basePercentage}%"></div>
+                                    ${bonusScore > 0 ? `<div class="progress-fill bonus-progress" style="width: ${bonusPercentage}%; left: ${Math.min(basePercentage, 100)}%"></div>` : ''}
+                                </div>
+                                <div class="progress-legend">
+                                    <div class="legend-item">
+                                        <div class="legend-color base"></div>
+                                        <span>基础 ${baseScore}</span>
+                                    </div>
+                                    ${bonusScore > 0 ? `
+                                        <div class="legend-item">
+                                            <div class="legend-color bonus"></div>
+                                            <span>加成 +${bonusScore}</span>
+                                        </div>
+                                    ` : ''}
+                                    <div class="legend-item legend-max">
+                                        <span>/ ${maxScore}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="category-score-container">
+                            <div class="main-category-score">${score}</div>
+                            ${bonusScore > 0 ? `
+                                <div class="score-composition-mini">
+                                    <span>${baseScore}</span>
+                                    <span class="plus">+</span>
+                                    <span>${bonusScore}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        <button class="toggle-detail collapsed" onclick="this.parentElement.parentElement.parentElement.querySelector('.category-detail').style.display = this.classList.contains('collapsed') ? 'block' : 'none'; this.classList.toggle('collapsed'); this.classList.toggle('expanded');">
+                            详情
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="category-detail" style="display: none;">
+                    ${this.generateCategoryDetail(category, scoreData, hasAIEnhancement)}
+                </div>
+            `;
+            
+            container.appendChild(scoreItem);
+        });
+        
+        // 添加AI增强总结（如果适用）
+        if (this.currentAnalysis && this.currentAnalysis.analysis && this.currentAnalysis.analysis.aiEnhanced) {
+            const aiSummary = document.createElement('div');
+            aiSummary.className = 'ai-summary-box';
+            aiSummary.innerHTML = `
+                <div class="ai-summary-header">
+                    <span class="ai-summary-icon">🔍</span>
+                    <span class="ai-summary-title">AI关键词提取分析总结</span>
+                </div>
+                <div class="ai-summary-content">
+                    <p>本次分析采用AI关键词提取技术，智能识别简历关键信息</p>
+                    <p>置信度: <span class="confidence-indicator confidence-${this.getConfidenceLevel(this.currentAnalysis.analysis.aiConfidence)}">${Math.round(this.currentAnalysis.analysis.aiConfidence * 100)}%</span></p>
+                    <p>相比传统分析，AI关键词提取能够：</p>
+                    <ul>
+                        <li>🎯 更准确识别关键信息</li>
+                        <li>🔄 智能去重，减少重复内容</li>
+                        <li>📝 优化文本结构，提高可读性</li>
+                        <li>⚡ 提升分析速度和准确性</li>
+                    </ul>
+                </div>
+            `;
+            container.appendChild(aiSummary);
+        }
+    }
+    
+    // 辅助方法：生成类别详情
+    generateCategoryDetail(category, scoreData, hasAIEnhancement = false) {
+        const detailMap = {
+            basicInfo: this.generateBasicInfoDetail,
+            education: this.generateEducationDetail,
+            skills: this.generateSkillsDetail,
+            experience: this.generateExperienceDetail,
+            achievements: this.generateAchievementsDetail
+        };
+        
+        const generator = detailMap[category];
+        if (generator && typeof generator === 'function') {
+            return generator.call(this, scoreData, hasAIEnhancement);
+        }
+        
+        return `<p>详细信息暂无</p>`;
+    }
+    
+    // 各类别详情生成方法
+    generateBasicInfoDetail(scoreData, hasAIEnhancement) {
+        const details = scoreData.details || {};
+        
+        let html = '<h4>基本信息详情</h4>';
+        
+        const items = [
+            { key: 'name', label: '姓名', icon: '👤' },
+            { key: 'phone', label: '电话', icon: '📞' },
+            { key: 'email', label: '邮箱', icon: '📧' },
+            { key: 'address', label: '地址/意向', icon: '📍' },
+            { key: 'intention', label: '求职意向', icon: '🎯' },
+            { key: 'website', label: '个人网站', icon: '🌐' },
+            { key: 'social', label: '社交媒体', icon: '📱' }
+        ];
+        
+        items.forEach(item => {
+            const hasItem = details[item.key];
+            html += `
+                <div class="subcategory-item ${hasItem ? 'completed' : 'missing'}">
+                    <div class="subcategory-info">
+                        <div class="subcategory-name">
+                            ${item.icon} ${item.label}
+                            ${hasAIEnhancement && hasItem ? '<span class="ai-detected">AI识别</span>' : ''}
+                        </div>
+                    </div>
+                    <div class="subcategory-status">
+                        ${hasItem ? '✅ 已填写' : '❌ 缺失'}
+                    </div>
+                </div>
+            `;
+        });
+        
+        if (hasAIEnhancement) {
+            html += `
+                <div class="ai-insight-box">
+                    <h5>🔍 AI分析洞察</h5>
+                    <p>AI智能识别了您简历中的关键个人信息，建议补充缺失项以提高完整性。</p>
+                </div>
+            `;
+        }
+        
+        return html;
+    }
+    
+    generateEducationDetail(scoreData, hasAIEnhancement) {
+        const details = scoreData.details || {};
+        
+        let html = '<h4>教育背景详情</h4>';
+        
+        html += `
+            <div class="subcategory-item">
+                <div class="subcategory-info">
+                    <div class="subcategory-name">🏫 学校水平</div>
+                    <div class="subcategory-max">满分: 15分</div>
+                </div>
+                <div class="subcategory-progress-container">
+                    <div class="subcategory-progress">
+                        <div class="subcategory-progress-fill" style="width: ${(details.school / 15) * 100}%"></div>
+                    </div>
+                    <div class="subcategory-score">${details.school || 0}</div>
+                </div>
+            </div>
+            
+            <div class="subcategory-item">
+                <div class="subcategory-info">
+                    <div class="subcategory-name">📊 学术成绩</div>
+                    <div class="subcategory-max">满分: 5分</div>
+                </div>
+                <div class="subcategory-progress-container">
+                    <div class="subcategory-progress">
+                        <div class="subcategory-progress-fill" style="width: ${(details.academic / 5) * 100}%"></div>
+                    </div>
+                    <div class="subcategory-score">${details.academic || 0}</div>
+                </div>
+            </div>
+            
+            <div class="subcategory-item">
+                <div class="subcategory-info">
+                    <div class="subcategory-name">🎓 学历层次</div>
+                    <div class="subcategory-max">满分: 5分</div>
+                </div>
+                <div class="subcategory-progress-container">
+                    <div class="subcategory-progress">
+                        <div class="subcategory-progress-fill" style="width: ${(details.degree / 5) * 100}%"></div>
+                    </div>
+                    <div class="subcategory-score">${details.degree || 0}</div>
+                </div>
+            </div>
+        `;
+        
+        if (scoreData.total > 25) {
+            html += `
+                <div class="education-note">
+                    <p><strong>🌟 教育背景超分奖励</strong></p>
+                    <p>您的教育背景得分超过了基础分上限，这通常意味着您拥有优秀的学校背景或突出的学术表现。</p>
+                </div>
+            `;
+        }
+        
+        if (hasAIEnhancement) {
+            html += `
+                <div class="ai-insight-box">
+                    <h5>🔍 AI分析洞察</h5>
+                    <p>AI从您的简历中智能提取了教育信息，自动识别学校层次和学历程度。</p>
+                </div>
+            `;
+        }
+        
+        return html;
+    }
+    
+    generateSkillsDetail(scoreData, hasAIEnhancement) {
+        const details = scoreData.details || {};
+        
+        let html = '<h4>专业技能详情</h4>';
+        
+        const skillCategories = [
+            { key: 'programming', label: '编程开发', icon: '💻' },
+            { key: 'design', label: '设计创作', icon: '🎨' },
+            { key: 'data', label: '数据分析', icon: '📊' },
+            { key: 'engineering', label: '工程技术', icon: '⚙️' },
+            { key: 'arts', label: '文体艺术', icon: '🎭' }
+        ];
+        
+        skillCategories.forEach(category => {
+            const score = details[category.key] || 0;
+            const maxScore = 4;
+            
+            html += `
+                <div class="subcategory-item ${score > 0 ? 'has-skills' : ''}">
+                    <div class="subcategory-info">
+                        <div class="subcategory-name">
+                            ${category.icon} ${category.label}
+                            ${hasAIEnhancement && score > 0 ? '<span class="ai-detected">AI识别</span>' : ''}
+                        </div>
+                        <div class="subcategory-max">满分: ${maxScore}分</div>
+                    </div>
+                    <div class="subcategory-progress-container">
+                        <div class="subcategory-progress">
+                            <div class="subcategory-progress-fill" style="width: ${(score / maxScore) * 100}%"></div>
+                        </div>
+                        <div class="subcategory-score">${score}</div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        if (hasAIEnhancement) {
+            html += `
+                <div class="ai-insight-box">
+                    <h5>🔍 AI分析洞察</h5>
+                    <p>AI智能识别了您简历中的技能关键词，自动分类到相应技能领域。</p>
+                </div>
+            `;
+        }
+        
+        return html;
+    }
+    
+    generateExperienceDetail(scoreData, hasAIEnhancement) {
+        const details = scoreData.details || {};
+        
+        let html = '<h4>实践经验详情</h4>';
+        
+        const experienceCategories = [
+            { key: 'internship', label: '实习经历', icon: '💼', maxScore: 10 },
+            { key: 'project', label: '项目经验', icon: '📋', maxScore: 10 },
+            { key: 'academic', label: '学术研究', icon: '📚', maxScore: 10 }
+        ];
+        
+        experienceCategories.forEach(category => {
+            const score = details[category.key] || 0;
+            
+            html += `
+                <div class="subcategory-item ${score > 0 ? 'has-experience' : ''}">
+                    <div class="subcategory-info">
+                        <div class="subcategory-name">
+                            ${category.icon} ${category.label}
+                            ${hasAIEnhancement && score > 0 ? '<span class="ai-detected">AI识别</span>' : ''}
+                        </div>
+                        <div class="subcategory-max">满分: ${category.maxScore}分</div>
+                    </div>
+                    <div class="subcategory-progress-container">
+                        <div class="subcategory-progress">
+                            <div class="subcategory-progress-fill" style="width: ${(score / category.maxScore) * 100}%"></div>
+                        </div>
+                        <div class="subcategory-score">${score}</div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        if (hasAIEnhancement) {
+            html += `
+                <div class="ai-insight-box">
+                    <h5>🔍 AI分析洞察</h5>
+                    <p>AI从您的简历中提取了实践经验信息，自动识别实习、项目和学术活动。</p>
+                </div>
+            `;
+        }
+        
+        return html;
+    }
+    
+    generateAchievementsDetail(scoreData, hasAIEnhancement) {
+        const details = scoreData.details || {};
+        
+        let html = '<h4>奖励荣誉详情</h4>';
+        
+        const achievementCategories = [
+            { key: 'leadership', label: '学生干部', icon: '👥', maxScore: 5 },
+            { key: 'honor', label: '奖学金荣誉', icon: '🏅', maxScore: 5 },
+            { key: 'competition', label: '竞赛获奖', icon: '🏆', maxScore: 5 },
+            { key: 'certificate', label: '专业证书', icon: '📜', maxScore: 5 }
+        ];
+        
+        achievementCategories.forEach(category => {
+            const score = details[category.key] || 0;
+            
+            html += `
+                <div class="subcategory-item ${score > 0 ? 'has-achievement' : ''}">
+                    <div class="subcategory-info">
+                        <div class="subcategory-name">
+                            ${category.icon} ${category.label}
+                            ${hasAIEnhancement && score > 0 ? '<span class="ai-detected">AI识别</span>' : ''}
+                        </div>
+                        <div class="subcategory-max">满分: ${category.maxScore}分</div>
+                    </div>
+                    <div class="subcategory-progress-container">
+                        <div class="subcategory-progress">
+                            <div class="subcategory-progress-fill" style="width: ${(score / category.maxScore) * 100}%"></div>
+                        </div>
+                        <div class="subcategory-score">${score}</div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        // 显示额外加成（如果有）
+        if (scoreData.extraScore && Object.keys(scoreData.extraScore).length > 0) {
+            html += `
+                <div class="extra-score-section">
+                    <h5>🌟 超分加成</h5>
+            `;
+            
+            Object.entries(scoreData.extraScore).forEach(([category, score]) => {
+                if (score > 0) {
+                    const categoryNames = {
+                        leadership: '学生干部',
+                        honor: '奖学金荣誉', 
+                        competition: '竞赛获奖',
+                        certificate: '专业证书'
+                    };
+                    
+                    html += `
+                        <div class="extra-score-item">
+                            <span>${categoryNames[category] || category}: +${score}分</span>
+                        </div>
+                    `;
+                }
+            });
+            
+            html += `</div>`;
+        }
+        
+        if (hasAIEnhancement) {
+            html += `
+                <div class="ai-insight-box">
+                    <h5>🔍 AI分析洞察</h5>
+                    <p>AI智能识别了您的奖励荣誉信息，自动分类不同类型的成就。</p>
+                </div>
+            `;
+        }
+        
+        return html;
+    }
+    
+    // 辅助方法：获取置信度等级
+    getConfidenceLevel(confidence) {
+        if (confidence >= 0.8) return 'high';
+        if (confidence >= 0.6) return 'medium';
+        return 'low';
     }
     
     updateJobRecommendations(jobs) {
@@ -1224,6 +1688,7 @@ console.log(`
 - ✅ 深色模式
 - ✅ 多语言支持
 - ✅ 性能监控
+
 快捷键:
 - Ctrl+U: 上传文件
 - Ctrl+Enter: 开始分析
@@ -1231,5 +1696,6 @@ console.log(`
 - Ctrl+I: 切换AI模式
 - F1: 显示快捷键
 - ESC: 关闭弹窗
+
 GitHub: https://github.com/Theodore-Hu/Score-for-Resume-AI
 `);
