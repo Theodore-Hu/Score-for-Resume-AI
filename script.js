@@ -192,7 +192,7 @@ class ResumeScoreApp {
         const text = document.getElementById('resumeText').value.trim();
         const analyzeBtn = document.querySelector('.analyze-btn');
         
-        if (text.length > 100) {
+        if (text.length > 10) {
             analyzeBtn.style.background = this.aiKeywordExtractor && this.aiKeywordExtractor.isEnabled ? 
                 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 
                 '#48bb78';
