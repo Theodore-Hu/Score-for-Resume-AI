@@ -15,17 +15,14 @@
     
     <!-- 添加 favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
-
-    <!-- 在第13行后添加AI库引用 -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js" 
-            onerror="handleCDNError('tensorflow')" 
-            async></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/universal-sentence-encoder@1.3.3/dist/universal-sentence-encoder.min.js" 
-            onerror="handleCDNError('use')" 
+    
+    <!-- 轻量级NLP库用于关键词提取 -->
+    <script src="https://cdn.jsdelivr.net/npm/compromise@14.10.0/builds/compromise.min.js" 
+            onerror="handleCDNError('nlp')" 
             async></script>
     
     <!-- CDN 资源 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js" 
             onerror="handleCDNError('pdf')" 
             async></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js" 
@@ -37,10 +34,10 @@
     <button class="theme-toggle" onclick="toggleTheme()" aria-label="切换主题">
         <span class="theme-icon">🌙</span>
     </button>
-
-    <!-- AI模式切换按钮 -->
-    <div class="ai-toggle" onclick="toggleAIMode()" aria-label="切换AI模式">
-        <div class="ai-icon">🤖</div>
+    
+    <!-- AI关键词提取切换按钮 -->
+    <div class="ai-toggle" onclick="toggleAIMode()" aria-label="切换AI关键词提取">
+        <div class="ai-icon">🔍</div>
         <div class="ai-status" id="aiStatus">AI</div>
     </div>
     
@@ -50,34 +47,29 @@
             <span id="langText">EN</span>
         </button>
     </div>
-
+    
     <div class="container">
         <header>
             <h1 data-lang="title">🎓 应届生简历评分工具</h1>
             <p data-lang="subtitle">专业评估 • 岗位推荐 • 提升建议</p>
         </header>
-
+        
         <!-- 上传区域 -->
         <section class="upload-section">
             <div class="upload-card">
-                
+                <!-- AI状态显示 -->
                 <div class="ai-status-display" id="aiStatusDisplay" style="display: none;">
-                    <span class="status-icon">🤖</span>
-                    <span class="status-text" id="aiStatusText">AI初始化中...</span>
+                    <span class="status-icon">🔍</span>
+                    <span class="status-text" id="aiStatusText">AI关键词提取准备就绪</span>
                 </div>
+
                 <div class="ai-mode-info" id="aiModeInfo" style="display: none;">
                     <div class="ai-info-content">
                         <span class="ai-info-icon">🧠</span>
-                        <span>AI智能分析模式已启用 - 将使用机器学习进行深度文本理解</span>
+                        <span>AI关键词提取已启用 - 智能识别简历关键信息，减少重复和遗漏</span>
                     </div>
                 </div>
-                <div class="ai-loading-progress" id="aiLoadingProgress" style="display: none;">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="aiProgressFill"></div>
-                    </div>
-                    <div class="progress-text" id="aiProgressText">正在加载AI模型...</div>
-                </div>
-                
+
                 <h2 data-lang="upload-title">📄 上传简历</h2>
                 <div class="upload-area" id="uploadArea">
                     <div class="upload-icon">📎</div>
@@ -107,22 +99,19 @@
                         <button class="clear-btn" onclick="clearTextarea()" data-lang="clear">清空</button>
                     </div>
                     <button class="analyze-btn" onclick="analyzeResume()" disabled data-lang="analyze">
-                        开始分析
+                        <span class="btn-icon">🔍</span>
+                        <span class="btn-text">开始分析</span>
                     </button>
                 </div>
             </div>
         </section>
-
+        
         <!-- 结果展示区域 -->
         <section class="result-section" id="resultSection" style="display: none;">
             <div class="result-card">
                 <!-- 总分展示 -->
                 <div class="score-overview">
                     <div class="total-score">
-                        <div class="ai-analysis-badge" id="aiAnalysisBadge" style="display: none;">
-                            <span class="ai-badge-icon">🤖</span>
-                            <span class="ai-badge-text">AI智能分析完成</span>
-                        </div>
                         <div class="score-circle" id="scoreCircle">
                             <span class="score-number" id="totalScore">0</span>
                             <span class="score-suffix" data-lang="score-suffix">分</span>
@@ -131,6 +120,12 @@
                             <h2 id="scoreLevel" data-lang="evaluating">评估中...</h2>
                             <p id="scoreSummary" data-lang="analyzing">正在分析您的简历...</p>
                         </div>
+                    </div>
+                    
+                    <!-- AI分析标识 -->
+                    <div class="ai-analysis-badge" id="aiAnalysisBadge" style="display: none;">
+                        <span class="ai-badge-icon">🔍</span>
+                        <span class="ai-badge-text">AI关键词提取完成</span>
                     </div>
                     
                     <!-- 操作按钮 -->
@@ -146,7 +141,7 @@
                         </button>
                     </div>
                 </div>
-
+                
                 <!-- 详细评分 -->
                 <div class="detailed-scores">
                     <h3 data-lang="detailed-scores">📊 详细评分</h3>
@@ -154,7 +149,7 @@
                         <!-- 动态生成 -->
                     </div>
                 </div>
-
+                
                 <!-- 岗位推荐 -->
                 <div class="job-recommendations">
                     <h3 data-lang="job-recommendations">🎯 岗位推荐</h3>
@@ -162,7 +157,7 @@
                         <!-- 动态生成 -->
                     </div>
                 </div>
-
+                
                 <!-- 改进建议 -->
                 <div class="suggestions">
                     <h3 data-lang="suggestions">💡 改进建议</h3>
@@ -172,12 +167,12 @@
                 </div>
             </div>
         </section>
-
+        
         <footer>
             <p data-lang="footer">Made with ❤️ for 应届毕业生 | <a href="https://github.com/yourusername/resume-scorer" target="_blank">GitHub</a></p>
         </footer>
     </div>
-
+    
     <!-- 加载提示 -->
     <div class="loading-overlay" id="loadingOverlay" style="display: none;">
         <div class="loading-content">
@@ -185,10 +180,10 @@
             <p id="loadingText" data-lang="loading">正在处理中...</p>
         </div>
     </div>
-
+    
     <!-- Toast 通知 -->
     <div class="toast-container" id="toastContainer"></div>
-
+    
     <!-- 键盘快捷键帮助 -->
     <div class="keyboard-shortcuts" id="keyboardShortcuts" style="display: none;">
         <h3>⌨️ 键盘快捷键</h3>
@@ -196,18 +191,33 @@
             <div><kbd>Ctrl</kbd> + <kbd>U</kbd> - 上传文件</div>
             <div><kbd>Ctrl</kbd> + <kbd>Enter</kbd> - 开始分析</div>
             <div><kbd>Ctrl</kbd> + <kbd>E</kbd> - 导出报告</div>
+            <div><kbd>Ctrl</kbd> + <kbd>I</kbd> - 切换AI模式</div>
             <div><kbd>F1</kbd> - 显示/隐藏快捷键</div>
             <div><kbd>Esc</kbd> - 关闭弹窗</div>
         </div>
     </div>
-
+    
     <script>
         // CDN 错误处理
         function handleCDNError(type) {
+            const errorMessages = {
+                'nlp': 'NLP库加载失败，AI关键词提取功能将不可用',
+                'pdf': 'PDF.js库加载失败，可能影响PDF文件解析',
+                'mammoth': 'Word解析库加载失败，可能影响Word文件解析'
+            };
+            
             console.warn(`${type} CDN failed, using fallback`);
-            showToast(`${type} 库加载失败，可能影响部分功能`, 'warning');
+            if (window.app) {
+                window.app.showToast(errorMessages[type] || `${type} 库加载失败`, 'warning');
+            } else {
+                setTimeout(() => {
+                    if (window.app) {
+                        window.app.showToast(errorMessages[type] || `${type} 库加载失败`, 'warning');
+                    }
+                }, 2000);
+            }
         }
-
+        
         // 初始化
         window.addEventListener('DOMContentLoaded', function() {
             initializeApp();
@@ -215,6 +225,7 @@
     </script>
     
     <script src="i18n.js"></script>
+    <script src="ai-keyword-extractor.js"></script>
     <script src="resume-parser.js"></script>
     <script src="script.js"></script>
 </body>
