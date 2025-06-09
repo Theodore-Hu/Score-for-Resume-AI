@@ -1420,3 +1420,395 @@ window.ResumeScorer = ResumeScorer;
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { ResumeParser, ResumeScorer };
 }
+
+// 在原有ResumeScorer类的基础上添加AI增强
+class AIEnhancedResumeScorer extends ResumeScorer {
+    constructor() {
+        super();
+        this.aiEnhancer = window.aiEnhancer;
+    }
+    
+    async scoreResumeWithAI(text) {
+        console.log('开始AI增强简历评分...');
+        
+        try {
+            // 尝试AI增强分析
+            let aiAnalysis = null;
+            if (this.aiEnhancer && this.aiEnhancer.isAIEnabled()) {
+                aiAnalysis = await this.aiEnhancer.enhanceResumeAnalysis(text);
+            }
+            
+            // 基础分析
+            const baseAnalysis = this.analyzeResume(text);
+            const baseScores = this.calculateScores(baseAnalysis);
+            
+            // 如果有AI分析结果，进行融合
+            if (aiAnalysis && aiAnalysis.isAIEnhanced) {
+                console.log('使用AI增强结果进行评分融合...');
+                const enhancedAnalysis = this.mergeWithAIAnalysis(baseAnalysis, aiAnalysis);
+                const enhancedScores = this.calculateEnhancedScores(enhancedAnalysis, aiAnalysis);
+                
+                // 检测专精（包含AI增强的专精检测）
+                const specializations = this.detectSpecializationWithAI(enhancedAnalysis, aiAnalysis);
+                
+                let baseTotalScore = 0;
+                Object.entries(enhancedScores).forEach(([category, scoreObj]) => {
+                    const score = typeof scoreObj === 'object' ? scoreObj.total : scoreObj;
+                    if (category === 'education') {
+                        baseTotalScore += score;
+                    } else {
+                        baseTotalScore += Math.min(score, this.maxScores[category]);
+                    }
+                });
+                
+                const specializationBonus = specializations.reduce((sum, spec) => sum + spec.bonus, 0);
+                const finalTotalScore = baseTotalScore + specializationBonus;
+                
+                const suggestions = this.generateEnhancedSuggestions(enhancedScores, enhancedAnalysis, aiAnalysis);
+                const jobRecommendations = this.recommendJobsWithAI(enhancedAnalysis, specializations, aiAnalysis);
+                
+                return {
+                    baseScore: Math.round(baseTotalScore),
+                    specializationBonus: specializationBonus,
+                    totalScore: Math.round(finalTotalScore),
+                    categoryScores: enhancedScores,
+                    analysis: enhancedAnalysis,
+                    specializations: specializations,
+                    suggestions: suggestions,
+                    jobRecommendations: jobRecommendations,
+                    aiEnhanced: true,
+                    aiAnalysis: aiAnalysis,
+                    aiConfidence: aiAnalysis.confidence
+                };
+            } else {
+                console.log('AI分析不可用，使用传统评分方法');
+                // 回退到传统方法
+                return this.scoreResume(text);
+            }
+            
+        } catch (error) {
+            console.error('AI增强评分失败，回退到传统方法:', error);
+            // 出错时回退到传统方法
+            return this.scoreResume(text);
+        }
+    }
+    
+    mergeWithAIAnalysis(baseAnalysis, aiAnalysis) {
+        const enhancedAnalysis = { ...baseAnalysis };
+        
+        // 融合个人信息
+        if (aiAnalysis.structured.personalInfo) {
+            const aiPersonalInfo = aiAnalysis.structured.personalInfo;
+            if (aiPersonalInfo.email && !enhancedAnalysis.basicInfo.email) {
+                enhancedAnalysis.basicInfo.email = true;
+                enhancedAnalysis.basicInfo.count += 1;
+            }
+            if (aiPersonalInfo.phone && !enhancedAnalysis.basicInfo.phone) {
+                enhancedAnalysis.basicInfo.phone = true;
+                enhancedAnalysis.basicInfo.count += 1;
+            }
+            if (aiPersonalInfo.name && !enhancedAnalysis.basicInfo.name) {
+                enhancedAnalysis.basicInfo.name = true;
+                enhancedAnalysis.basicInfo.count += 1;
+            }
+        }
+        
+        // 融合教育信息
+        if (aiAnalysis.structured.education && aiAnalysis.structured.education.length > 0) {
+            const aiEducation = aiAnalysis.structured.education;
+            
+            // 如果AI识别出更多学位信息
+            const existingDegrees = enhancedAnalysis.education.degrees.length;
+            const aiDegrees = aiEducation.filter(edu => edu.school && edu.degree);
+            
+            if (aiDegrees.length > existingDegrees) {
+                console.log('AI识别出更多教育信息:', aiDegrees.length - existingDegrees);
+                // 合并AI识别的学位信息
+                aiDegrees.forEach(aiEdu => {
+                    const exists = enhancedAnalysis.education.degrees.some(deg => 
+                        deg.school === aiEdu.school || deg.degree === aiEdu.degree
+                    );
+                    if (!exists) {
+                        enhancedAnalysis.education.degrees.push({
+                            school: aiEdu.school,
+                            degree: this.mapAIDegreeToStandard(aiEdu.degree),
+                            text: aiEdu.originalText,
+                            aiEnhanced: true,
+                            confidence: aiEdu.confidence
+                        });
+                    }
+                });
+                
+                // 重新计算教育评分
+                enhancedAnalysis.education.schoolLevel = this.calculateSchoolScore(
+                    enhancedAnalysis.originalText, 
+                    enhancedAnalysis.education.degrees
+                );
+                enhancedAnalysis.education.degreeScore = this.calculateDegreeScore(
+                    enhancedAnalysis.education.degrees
+                );
+            }
+        }
+        
+        // 融合技能信息
+        if (aiAnalysis.structured.skills && aiAnalysis.structured.skills.length > 0) {
+            const aiSkills = aiAnalysis.structured.skills;
+            aiSkills.forEach(skillObj => {
+                const skillName = skillObj.skill;
+                let added = false;
+                
+                // 尝试添加到对应类别
+                Object.keys(enhancedAnalysis.skills).forEach(category => {
+                    if (Array.isArray(enhancedAnalysis.skills[category])) {
+                        if (this.skillKeywords[category] && 
+                            this.skillKeywords[category].includes(skillName) &&
+                            !enhancedAnalysis.skills[category].includes(skillName)) {
+                            enhancedAnalysis.skills[category].push(skillName);
+                            added = true;
+                        }
+                    }
+                });
+                
+                if (added) {
+                    enhancedAnalysis.skills.total += 1;
+                }
+            });
+        }
+        
+        // 融合经验信息
+        if (aiAnalysis.structured.experience && aiAnalysis.structured.experience.length > 0) {
+            const aiExperience = aiAnalysis.structured.experience;
+            const companyCount = aiExperience.filter(exp => exp.company).length;
+            const projectKeywords = aiExperience.filter(exp => 
+                exp.originalText.includes('项目') || exp.originalText.includes('开发')
+            ).length;
+            
+            // 如果AI识别出更多实习/项目经验，适当调整分数
+            if (companyCount > enhancedAnalysis.experience.internshipCount) {
+                console.log('AI识别出更多实习经验');
+                enhancedAnalysis.experience.internshipCount = Math.max(
+                    enhancedAnalysis.experience.internshipCount, 
+                    companyCount
+                );
+                enhancedAnalysis.experience.hasCompanyName = true;
+            }
+            
+            if (projectKeywords > enhancedAnalysis.experience.projectCount) {
+                console.log('AI识别出更多项目经验');
+                enhancedAnalysis.experience.projectCount = Math.max(
+                    enhancedAnalysis.experience.projectCount, 
+                    projectKeywords
+                );
+                enhancedAnalysis.experience.hasAchievement = true;
+            }
+        }
+        
+        // 标记为AI增强
+        enhancedAnalysis.aiEnhanced = true;
+        enhancedAnalysis.aiConfidence = aiAnalysis.confidence;
+        
+        return enhancedAnalysis;
+    }
+    
+    mapAIDegreeToStandard(aiDegree) {
+        const degreeMap = {
+            '本科': 'bachelor',
+            '学士': 'bachelor',
+            '硕士': 'master',
+            '硕士研究生': 'master',
+            '博士': 'phd',
+            '博士研究生': 'phd'
+        };
+        return degreeMap[aiDegree] || 'bachelor';
+    }
+    
+    calculateEnhancedScores(analysis, aiAnalysis) {
+        const baseScores = this.calculateScores(analysis);
+        
+        // AI置信度加成
+        if (aiAnalysis.confidence > 0.7) {
+            console.log('高置信度AI分析，给予小幅加成');
+            
+            // 对识别准确的部分给予小幅加成（不超过原有限制）
+            Object.keys(baseScores).forEach(category => {
+                if (category !== 'education') {
+                    const maxScore = this.maxScores[category];
+                    const currentScore = baseScores[category].total;
+                    const bonusRatio = Math.min(aiAnalysis.confidence - 0.7, 0.2); // 最多20%加成
+                    const bonus = Math.min(currentScore * bonusRatio, maxScore - currentScore);
+                    
+                    if (bonus > 0) {
+                        baseScores[category].total += Math.round(bonus);
+                        baseScores[category].aiBonus = Math.round(bonus);
+                    }
+                }
+            });
+        }
+        
+        return baseScores;
+    }
+    
+    detectSpecializationWithAI(analysis, aiAnalysis) {
+        // 先获取基础专精
+        const baseSpecializations = this.detectSpecialization(analysis);
+        
+        // AI增强的专精检测
+        const aiSpecializations = [];
+        
+        if (aiAnalysis.structured.skills && aiAnalysis.structured.skills.length >= 8) {
+            // AI识别出的技能数量很多，可能是技能专精
+            const skillCategories = {};
+            aiAnalysis.structured.skills.forEach(skillObj => {
+                Object.entries(this.skillKeywords).forEach(([category, keywords]) => {
+                    if (keywords.includes(skillObj.skill)) {
+                        skillCategories[category] = (skillCategories[category] || 0) + 1;
+                    }
+                });
+            });
+            
+            Object.entries(skillCategories).forEach(([category, count]) => {
+                if (count >= 4) {
+                    const existingSpec = baseSpecializations.find(spec => 
+                        spec.type === category && spec.category === 'skill'
+                    );
+                    if (!existingSpec) {
+                        aiSpecializations.push({
+                            type: category,
+                            category: 'skill',
+                            level: count,
+                            bonus: Math.min(count - 3, 3),
+                            description: `AI识别${category}专精 (${count}项技能)`,
+                            aiEnhanced: true
+                        });
+                    }
+                }
+            });
+        }
+        
+        if (aiAnalysis.structured.experience && aiAnalysis.structured.experience.length >= 3) {
+            // AI识别出丰富的经验，可能是经验专精
+            const companyExperience = aiAnalysis.structured.experience.filter(exp => exp.company).length;
+            if (companyExperience >= 3) {
+                const existingSpec = baseSpecializations.find(spec => 
+                    spec.type === 'internship' && spec.category === 'experience'
+                );
+                if (!existingSpec) {
+                    aiSpecializations.push({
+                        type: 'ai_experience',
+                        category: 'experience',
+                        level: companyExperience,
+                        bonus: Math.min(companyExperience - 2, 3),
+                        description: `AI识别实践专精 (${companyExperience}段经历)`,
+                        aiEnhanced: true
+                    });
+                }
+            }
+        }
+        
+        // 合并基础专精和AI专精
+        return [...baseSpecializations, ...aiSpecializations];
+    }
+    
+    generateEnhancedSuggestions(scores, analysis, aiAnalysis) {
+        const baseSuggestions = this.generateSuggestions(scores, analysis);
+        const aiSuggestions = [];
+        
+        // 基于AI分析结果的建议
+        if (aiAnalysis.confidence < 0.5) {
+            aiSuggestions.push('简历结构可能不够清晰，建议使用标准格式');
+        }
+        
+        if (aiAnalysis.structured.personalInfo) {
+            const personalInfo = aiAnalysis.structured.personalInfo;
+            if (!personalInfo.email) {
+                aiSuggestions.push('建议添加专业邮箱地址');
+            }
+            if (!personalInfo.phone) {
+                aiSuggestions.push('建议添加联系电话');
+            }
+        }
+        
+        if (aiAnalysis.structured.skills.length < 5) {
+            aiSuggestions.push('AI分析显示技能描述较少，建议详细列出掌握的技能');
+        }
+        
+        if (aiAnalysis.structured.experience.length < 2) {
+            aiSuggestions.push('建议增加更多实践经验描述，提高竞争力');
+        }
+        
+        // 去重并合并建议
+        const allSuggestions = [...baseSuggestions, ...aiSuggestions];
+        return Array.from(new Set(allSuggestions));
+    }
+    
+    recommendJobsWithAI(analysis, specializations, aiAnalysis) {
+        const baseJobs = this.recommendJobs(analysis, specializations);
+        
+        // 基于AI识别的技能和经验进行更精准的推荐
+        const aiJobs = [];
+        
+        if (aiAnalysis.structured.skills && aiAnalysis.structured.skills.length > 0) {
+            const skillCounts = {};
+            aiAnalysis.structured.skills.forEach(skillObj => {
+                const skill = skillObj.skill.toLowerCase();
+                if (skill.includes('java') || skill.includes('python') || skill.includes('javascript')) {
+                    skillCounts.programming = (skillCounts.programming || 0) + 1;
+                }
+                if (skill.includes('data') || skill.includes('sql') || skill.includes('分析')) {
+                    skillCounts.data = (skillCounts.data || 0) + 1;
+                }
+                if (skill.includes('design') || skill.includes('ui') || skill.includes('设计')) {
+                    skillCounts.design = (skillCounts.design || 0) + 1;
+                }
+            });
+            
+            // 基于技能集中度推荐
+            Object.entries(skillCounts).forEach(([category, count]) => {
+                if (count >= 3) {
+                    const jobMap = {
+                        programming: {
+                            category: 'AI推荐：软件开发工程师',
+                            match: Math.min(80 + count * 3, 95),
+                            reason: `AI识别出${count}项编程相关技能，适合开发岗位`
+                        },
+                        data: {
+                            category: 'AI推荐：数据分析师',
+                            match: Math.min(75 + count * 4, 90),
+                            reason: `AI识别出${count}项数据相关技能，适合数据岗位`
+                        },
+                        design: {
+                            category: 'AI推荐：UI/UX设计师',
+                            match: Math.min(70 + count * 5, 88),
+                            reason: `AI识别出${count}项设计相关技能，适合设计岗位`
+                        }
+                    };
+                    
+                    if (jobMap[category]) {
+                        aiJobs.push(jobMap[category]);
+                    }
+                }
+            });
+        }
+        
+        // 合并推荐，AI推荐优先
+        const allJobs = [...aiJobs, ...baseJobs];
+        
+        // 去重并按匹配度排序
+        const uniqueJobs = allJobs.filter((job, index, self) => 
+            index === self.findIndex(j => j.category === job.category)
+        );
+        
+        return uniqueJobs.sort((a, b) => b.match - a.match).slice(0, 5);
+    }
+}
+
+// 导出增强的评分器
+window.AIEnhancedResumeScorer = AIEnhancedResumeScorer;
+
+// 保持原有导出
+window.ResumeParser = ResumeParser;
+window.ResumeScorer = ResumeScorer;
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { ResumeParser, ResumeScorer, AIEnhancedResumeScorer };
+}
