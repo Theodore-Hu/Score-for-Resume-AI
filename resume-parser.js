@@ -399,27 +399,34 @@ class ResumeScorer {
         let count = 0;
         
         // 使用AI提取的个人信息（如果可用）
-        if (aiExtraction && aiExtraction.extractedKeywords.personal) {
+        if (aiExtraction && aiExtraction.extractedKeywords && aiExtraction.extractedKeywords.personal) {
             const personalKeywords = aiExtraction.extractedKeywords.personal;
             personalKeywords.forEach(item => {
-                const sentence = item.sentence || item;
-                if (/姓名|名字/.test(sentence)) { info.name = true; count++; }
-                if (/1[3-9]\d{9}/.test(sentence)) { info.phone = true; count++; }
-                if (/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/.test(sentence)) { info.email = true; count++; }
-                if (/(地址|住址|居住地)/.test(sentence)) { info.address = true; count++; }
+                // 安全地获取句子
+                const sentence = (item && typeof item.sentence === 'string') ? item.sentence : 
+                               (typeof item === 'string') ? item : '';
+                
+                if (sentence) {
+                    if (/姓名|名字/.test(sentence)) { info.name = true; count++; }
+                    if (/1[3-9]\d{9}/.test(sentence)) { info.phone = true; count++; }
+                    if (/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/.test(sentence)) { info.email = true; count++; }
+                    if (/(地址|住址|居住地)/.test(sentence)) { info.address = true; count++; }
+                }
             });
         }
         
-        // 传统方法补充
-        if (this.hasName(text)) { info.name = info.name || true; if (!info.name) count++; }
-        if (/1[3-9]\d{9}/.test(text)) { info.phone = info.phone || true; if (!info.phone) count++; }
-        if (/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/.test(text)) { info.email = info.email || true; if (!info.email) count++; }
-        if (/(市|省|区|县|路|街|号|意向|求职)/.test(text)) { info.address = info.address || true; if (!info.address) count++; }
-        if (/(求职|应聘|岗位|职位|意向)/.test(text)) { info.intention = true; count++; }
-        if (/(github|gitlab|个人网站|博客|portfolio)/i.test(text)) { info.website = true; count++; }
-        if (/(linkedin|微博|知乎)/i.test(text)) { info.social = true; count++; }
-        if (/(出生|生日|\d{4}年\d{1,2}月)/.test(text)) { info.birthday = true; count++; }
-        if (/(党员|团员|群众|政治面貌)/.test(text)) { info.political = true; count++; }
+        // 传统方法补充（确保text是字符串）
+        if (text && typeof text === 'string') {
+            if (this.hasName(text)) { info.name = info.name || true; if (!info.name) count++; }
+            if (/1[3-9]\d{9}/.test(text)) { info.phone = info.phone || true; if (!info.phone) count++; }
+            if (/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/.test(text)) { info.email = info.email || true; if (!info.email) count++; }
+            if (/(市|省|区|县|路|街|号|意向|求职)/.test(text)) { info.address = info.address || true; if (!info.address) count++; }
+            if (/(求职|应聘|岗位|职位|意向)/.test(text)) { info.intention = true; count++; }
+            if (/(github|gitlab|个人网站|博客|portfolio)/i.test(text)) { info.website = true; count++; }
+            if (/(linkedin|微博|知乎)/i.test(text)) { info.social = true; count++; }
+            if (/(出生|生日|\d{4}年\d{1,2}月)/.test(text)) { info.birthday = true; count++; }
+            if (/(党员|团员|群众|政治面貌)/.test(text)) { info.political = true; count++; }
+        }
         
         return { ...info, count: Math.min(count, 9) }; // 最多9分
     }
@@ -436,40 +443,57 @@ class ResumeScorer {
         };
         
         // 使用AI提取的技能信息
-        if (aiExtraction && aiExtraction.extractedKeywords.skills) {
+        if (aiExtraction && aiExtraction.extractedKeywords && aiExtraction.extractedKeywords.skills) {
             const skillKeywords = aiExtraction.extractedKeywords.skills;
             skillKeywords.forEach(item => {
-                const sentence = item.sentence || item;
-                const keywords = item.keywords || [item.keyword] || [];
+                // 安全地获取句子和关键词
+                const sentence = (item && typeof item.sentence === 'string') ? item.sentence : 
+                               (typeof item === 'string') ? item : '';
+                const keywords = item && Array.isArray(item.keywords) ? item.keywords : 
+                               (item && item.keyword) ? [item.keyword] : [];
                 
-                // 将AI提取的关键词分类到对应技能类别
-                Object.keys(this.skillKeywords).forEach(category => {
-                    this.skillKeywords[category].forEach(skill => {
-                        if (sentence.toLowerCase().includes(skill.toLowerCase()) || 
-                            keywords.some(k => k.toLowerCase().includes(skill.toLowerCase()))) {
-                            if (!skills[category].includes(skill)) {
-                                skills[category].push(skill);
+                if (sentence) {
+                    // 将AI提取的关键词分类到对应技能类别
+                    Object.keys(this.skillKeywords).forEach(category => {
+                        this.skillKeywords[category].forEach(skill => {
+                            // 添加安全检查
+                            if (skill && typeof skill === 'string' && sentence && typeof sentence === 'string') {
+                                const isInSentence = sentence.toLowerCase().includes(skill.toLowerCase());
+                                const isInKeywords = keywords.some(k => 
+                                    k && typeof k === 'string' && k.toLowerCase().includes(skill.toLowerCase())
+                                );
+                                
+                                if (isInSentence || isInKeywords) {
+                                    if (!skills[category].includes(skill)) {
+                                        skills[category].push(skill);
+                                    }
+                                }
                             }
-                        }
+                        });
                     });
-                });
+                }
             });
         }
         
         // 传统方法补充
-        const textLower = text.toLowerCase();
-        Object.keys(this.skillKeywords).forEach(category => {
-            this.skillKeywords[category].forEach(skill => {
-                const skillLower = skill.toLowerCase();
-                if (textLower.includes(skillLower) || 
-                    textLower.includes(skillLower.replace(/[.\s]/g, '')) ||
-                    this.fuzzyMatch(textLower, skillLower)) {
-                    if (!skills[category].includes(skill)) {
-                        skills[category].push(skill);
+        if (text && typeof text === 'string') {
+            const textLower = text.toLowerCase();
+            Object.keys(this.skillKeywords).forEach(category => {
+                this.skillKeywords[category].forEach(skill => {
+                    // 添加安全检查
+                    if (skill && typeof skill === 'string') {
+                        const skillLower = skill.toLowerCase();
+                        if (textLower.includes(skillLower) || 
+                            textLower.includes(skillLower.replace(/[.\s]/g, '')) ||
+                            this.fuzzyMatch(textLower, skillLower)) {
+                            if (!skills[category].includes(skill)) {
+                                skills[category].push(skill);
+                            }
+                        }
                     }
-                }
+                });
             });
-        });
+        }
         
         skills.total = Object.values(skills).reduce((sum, arr) => 
             sum + (Array.isArray(arr) ? arr.length : 0), 0
@@ -750,9 +774,19 @@ class ResumeScorer {
     
     // 其他方法保持不变...
     fuzzyMatch(text, keyword) {
-        const cleanText = text.replace(/[\s\-_.]/g, '');
-        const cleanKeyword = keyword.replace(/[\s\-_.]/g, '');
-        return cleanText.includes(cleanKeyword) || cleanKeyword.includes(cleanText);
+        // 添加安全检查
+        if (!text || !keyword || typeof text !== 'string' || typeof keyword !== 'string') {
+            return false;
+        }
+        
+        try {
+            const cleanText = text.replace(/[\s\-_.]/g, '');
+            const cleanKeyword = keyword.replace(/[\s\-_.]/g, '');
+            return cleanText.includes(cleanKeyword) || cleanKeyword.includes(cleanText);
+        } catch (error) {
+            console.warn('fuzzyMatch error:', error);
+            return false;
+        }
     }
     
     hasName(text) {
