@@ -192,7 +192,7 @@ class ResumeScoreApp {
         const text = document.getElementById('resumeText').value.trim();
         const analyzeBtn = document.querySelector('.analyze-btn');
         
-        if (text.length > 10) {
+        if (text.length > 100) {
             analyzeBtn.style.background = this.aiKeywordExtractor && this.aiKeywordExtractor.isEnabled ? 
                 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 
                 '#48bb78';
@@ -636,7 +636,6 @@ class ResumeScoreApp {
         
         suggestions.forEach((suggestion, index) => {
             const item = document.createElement('div');
-            const isPositive = suggestion.includes('质量很好') || suggestion.includes('名校背景') ||
             const isPositive = suggestion.includes('质量很好') || suggestion.includes('名校背景') || suggestion.includes('充分利用');
             const isAISuggestion = suggestion.includes('AI智能分析') || suggestion.includes('AI识别') || suggestion.includes('格式');
             
