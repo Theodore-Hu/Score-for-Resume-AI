@@ -1778,7 +1778,7 @@ textarea:focus {
     }
 }
 
-/* AI功能相关样式 */
+/* AI功能相关样式补充 */
 .ai-toggle {
     position: fixed;
     top: 20px;
@@ -1810,6 +1810,16 @@ textarea:focus {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+    animation: pulse-ai 2s ease-in-out infinite;
+}
+
+@keyframes pulse-ai {
+    0%, 100% { 
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+    }
+    50% { 
+        box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6);
+    }
 }
 
 .ai-icon {
@@ -1935,19 +1945,340 @@ textarea:focus {
     font-weight: 500;
 }
 
-/* 分析按钮AI模式样式 */
-.analyze-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    justify-content: center;
-}
-
-.btn-icon {
-    font-size: 1.1em;
-}
-
 /* AI增强的评分项样式 */
 .score-item.ai-enhanced {
     border-left: 4px solid #667eea;
-    background: linear-gradient(135deg, #f8faff 0%, #
+    background: linear-gradient(135deg, #f8faff 0%, #ffffff 100%);
+    box-shadow: 0 2px 12px rgba(102, 126, 234, 0.1);
+}
+
+.ai-bonus-badge {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 0.7em;
+    font-weight: 600;
+    margin-left: 6px;
+    box-shadow: 0 1px 3px rgba(102, 126, 234, 0.3);
+    animation: ai-pulse 2s ease-in-out infinite;
+}
+
+@keyframes ai-pulse {
+    0%, 100% { 
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% { 
+        transform: scale(1.05);
+        opacity: 0.9;
+    }
+}
+
+.ai-enhanced-tag {
+    background: rgba(102, 126, 234, 0.2);
+    color: #667eea;
+    padding: 1px 4px;
+    border-radius: 6px;
+    font-size: 0.8em;
+    font-weight: 600;
+    margin-left: 6px;
+}
+
+/* AI加成说明区域 */
+.ai-bonus-explanation {
+    background: linear-gradient(135deg, #f8faff 0%, #e6f0ff 100%);
+    border: 2px solid #667eea;
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 16px;
+}
+
+.ai-bonus-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.ai-bonus-icon {
+    font-size: 1.2em;
+}
+
+.ai-bonus-title {
+    font-weight: 600;
+    color: #667eea;
+    font-size: 1em;
+}
+
+.ai-bonus-content {
+    color: #4a5568;
+    line-height: 1.5;
+}
+
+.ai-bonus-content strong {
+    color: #667eea;
+    font-weight: 700;
+}
+
+/* 岗位推荐AI样式 */
+.job-item.ai-recommended {
+    background: linear-gradient(135deg, #f8faff 0%, #e6f0ff 100%);
+    border-left-color: #667eea;
+    border-left-width: 5px;
+    position: relative;
+}
+
+.job-item.ai-recommended::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 0;
+    height: 0;
+    border-left: 20px solid transparent;
+    border-top: 20px solid #667eea;
+}
+
+.job-item.ai-recommended::after {
+    content: '🤖';
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 0.8em;
+    color: white;
+}
+
+.job-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+    gap: 10px;
+}
+
+.job-title {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #333;
+    flex: 1;
+}
+
+.ai-rec-badge {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 0.7em;
+    font-weight: 600;
+    margin-left: 8px;
+    white-space: nowrap;
+}
+
+/* 建议列表AI样式 */
+.suggestion-item.ai-suggestion {
+    background: linear-gradient(135deg, #f8faff 0%, #e6f0ff 100%);
+    border-left-color: #667eea;
+    border-left-width: 4px;
+}
+
+.ai-suggestion-badge {
+    background: #667eea;
+    color: white;
+    padding: 1px 4px;
+    border-radius: 6px;
+    font-size: 0.7em;
+    font-weight: 600;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+/* 调试模式样式 */
+.debug-mode .score-item {
+    position: relative;
+}
+
+.debug-mode .score-item::after {
+    content: attr(data-debug-info);
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7em;
+    font-family: monospace;
+    pointer-events: none;
+}
+
+/* 深色主题下的AI样式 */
+.dark-theme .ai-toggle {
+    background: rgba(45, 55, 72, 0.9);
+    color: #e2e8f0;
+}
+
+.dark-theme .ai-status-display {
+    background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+    color: #e2e8f0;
+}
+
+.dark-theme .ai-mode-info {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.dark-theme .score-item.ai-enhanced {
+    background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+    border-left-color: #667eea;
+}
+
+.dark-theme .job-item.ai-recommended {
+    background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+}
+
+.dark-theme .suggestion-item.ai-suggestion {
+    background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+}
+
+.dark-theme .ai-bonus-explanation {
+    background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+    border-color: #667eea;
+}
+
+.dark-theme .ai-bonus-content {
+    color: #e2e8f0;
+}
+
+/* 响应式设计 - AI功能 */
+@media (max-width: 768px) {
+    .ai-toggle {
+        right: 85px;
+        width: 50px;
+        height: 45px;
+        font-size: 0.75em;
+    }
+    
+    .ai-status-display {
+        font-size: 0.85em;
+        padding: 6px 12px;
+    }
+    
+    .ai-mode-info {
+        padding: 10px 12px;
+        margin-bottom: 15px;
+    }
+    
+    .ai-info-content {
+        font-size: 0.9em;
+        gap: 8px;
+    }
+    
+    .ai-analysis-badge {
+        font-size: 0.8em;
+        padding: 5px 10px;
+    }
+    
+    .ai-bonus-badge,
+    .ai-rec-badge,
+    .ai-suggestion-badge {
+        font-size: 0.65em;
+        padding: 1px 4px;
+    }
+}
+
+@media (max-width: 480px) {
+    .ai-toggle {
+        right: 70px;
+        width: 45px;
+        height: 40px;
+    }
+    
+    .ai-icon {
+        font-size: 1.3em;
+    }
+    
+    .ai-status {
+        font-size: 0.65em;
+    }
+    
+    .job-header {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .ai-rec-badge {
+        align-self: flex-start;
+        margin-left: 0;
+        margin-top: 4px;
+    }
+}
+
+/* 打印样式 - 隐藏AI相关元素 */
+@media print {
+    .ai-toggle,
+    .ai-status-display,
+    .ai-mode-info,
+    .ai-analysis-badge,
+    .ai-bonus-explanation,
+    .ai-loading-progress {
+        display: none !important;
+    }
+    
+    .ai-bonus-badge,
+    .ai-rec-badge,
+    .ai-suggestion-badge,
+    .ai-enhanced-tag {
+        display: none !important;
+    }
+}
+
+/* 动画效果 */
+@keyframes slideInDown {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes glow {
+    from {
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    }
+    to {
+        box-shadow: 0 4px 16px rgba(102, 126, 234, 0.5);
+    }
+}
+
+/* 无障碍支持 */
+@media (prefers-reduced-motion: reduce) {
+    .ai-toggle.active,
+    .ai-analysis-badge,
+    .ai-bonus-badge {
+        animation: none;
+    }
+    
+    .ai-mode-info {
+        animation: none;
+    }
+}
+
+/* 高对比度模式支持 */
+@media (prefers-contrast: high) {
+    .ai-toggle {
+        border: 2px solid currentColor;
+    }
+    
+    .ai-status-display {
+        border-width: 3px;
+    }
+    
+    .ai-analysis-badge,
+    .ai-bonus-badge,
+    .ai-rec-badge {
+        border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+}
