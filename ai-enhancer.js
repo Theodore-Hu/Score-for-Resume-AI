@@ -3,7 +3,7 @@ class AIEnhancer {
     constructor() {
         this.model = null;
         this.isLoading = false;
-        this.isEnabled = localStorage.getItem('ai-mode-enabled') === 'true';
+        this.isEnabled = localStorage.getItem('ai-mode-enabled') !== 'false'; // 默认启用
         this.loadingProgress = 0;
         
         // 预定义的语义模板和权重
