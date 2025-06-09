@@ -15,6 +15,14 @@
     
     <!-- 添加 favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+
+    <!-- 在第13行后添加AI库引用 -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js" 
+            onerror="handleCDNError('tensorflow')" 
+            async></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/universal-sentence-encoder@1.3.3/dist/universal-sentence-encoder.min.js" 
+            onerror="handleCDNError('use')" 
+            async></script>
     
     <!-- CDN 资源 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" 
@@ -30,6 +38,12 @@
         <span class="theme-icon">🌙</span>
     </button>
 
+    <!-- AI模式切换按钮 -->
+    <div class="ai-toggle" onclick="toggleAIMode()" aria-label="切换AI模式">
+        <div class="ai-icon">🤖</div>
+        <div class="ai-status" id="aiStatus">AI</div>
+    </div>
+    
     <!-- 语言切换 -->
     <div class="language-toggle">
         <button onclick="toggleLanguage()" class="lang-btn">
@@ -46,6 +60,24 @@
         <!-- 上传区域 -->
         <section class="upload-section">
             <div class="upload-card">
+                
+                <div class="ai-status-display" id="aiStatusDisplay" style="display: none;">
+                    <span class="status-icon">🤖</span>
+                    <span class="status-text" id="aiStatusText">AI初始化中...</span>
+                </div>
+                <div class="ai-mode-info" id="aiModeInfo" style="display: none;">
+                    <div class="ai-info-content">
+                        <span class="ai-info-icon">🧠</span>
+                        <span>AI智能分析模式已启用 - 将使用机器学习进行深度文本理解</span>
+                    </div>
+                </div>
+                <div class="ai-loading-progress" id="aiLoadingProgress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="aiProgressFill"></div>
+                    </div>
+                    <div class="progress-text" id="aiProgressText">正在加载AI模型...</div>
+                </div>
+                
                 <h2 data-lang="upload-title">📄 上传简历</h2>
                 <div class="upload-area" id="uploadArea">
                     <div class="upload-icon">📎</div>
@@ -87,6 +119,10 @@
                 <!-- 总分展示 -->
                 <div class="score-overview">
                     <div class="total-score">
+                        <div class="ai-analysis-badge" id="aiAnalysisBadge" style="display: none;">
+                            <span class="ai-badge-icon">🤖</span>
+                            <span class="ai-badge-text">AI智能分析完成</span>
+                        </div>
                         <div class="score-circle" id="scoreCircle">
                             <span class="score-number" id="totalScore">0</span>
                             <span class="score-suffix" data-lang="score-suffix">分</span>
