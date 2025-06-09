@@ -1,4 +1,4 @@
-// 国际化支持
+// 国际化支持 - AI关键词提取版
 class I18n {
     constructor() {
         this.currentLang = localStorage.getItem('resume-scorer-lang') || 'zh';
@@ -24,7 +24,19 @@ class I18n {
                 'job-recommendations': '🎯 岗位推荐',
                 'suggestions': '💡 改进建议',
                 'footer': 'Made with ❤️ for 应届毕业生',
-                'loading': '正在处理中...'
+                'loading': '正在处理中...',
+                'score-suffix': '分',
+                // AI关键词提取相关
+                'ai-mode': 'AI关键词提取',
+                'ai-analyzing': 'AI正在提取关键词...',
+                'ai-ready': 'AI关键词提取就绪',
+                'ai-loading': 'AI初始化中',
+                'ai-error': 'AI提取失败',
+                'ai-disabled': 'AI提取关闭',
+                'ai-analysis-complete': 'AI关键词提取完成',
+                'ai-confidence': 'AI置信度',
+                'ai-keyword-extract': 'AI关键词提取已启用',
+                'ai-traditional-mode': '使用传统识别方法'
             },
             en: {
                 'title': '🎓 Graduate Resume Scorer',
@@ -47,34 +59,49 @@ class I18n {
                 'job-recommendations': '🎯 Job Recommendations',
                 'suggestions': '💡 Suggestions',
                 'footer': 'Made with ❤️ for Graduates',
-                'loading': 'Processing...'
+                'loading': 'Processing...',
+                'score-suffix': 'pts',
+                // AI keyword extraction related
+                'ai-mode': 'AI Keyword Extraction',
+                'ai-analyzing': 'AI extracting keywords...',
+                'ai-ready': 'AI keyword extraction ready',
+                'ai-loading': 'AI initializing',
+                'ai-error': 'AI extraction failed',
+                'ai-disabled': 'AI extraction disabled',
+                'ai-analysis-complete': 'AI keyword extraction completed',
+                'ai-confidence': 'AI Confidence',
+                'ai-keyword-extract': 'AI keyword extraction enabled',
+                'ai-traditional-mode': 'Using traditional recognition'
             }
         };
     }
-
+    
     t(key) {
         return this.translations[this.currentLang]?.[key] || key;
     }
-
+    
     switchLanguage(lang) {
         this.currentLang = lang;
         localStorage.setItem('resume-scorer-lang', lang);
         this.updateUI();
     }
-
+    
     updateUI() {
         document.querySelectorAll('[data-lang]').forEach(element => {
             const key = element.getAttribute('data-lang');
             element.textContent = this.t(key);
         });
-
+        
         document.querySelectorAll('[data-lang-placeholder]').forEach(element => {
             const key = element.getAttribute('data-lang-placeholder');
             element.placeholder = this.t(key);
         });
-
+        
         // 更新语言切换按钮
-        document.getElementById('langText').textContent = this.currentLang === 'zh' ? 'EN' : '中';
+        const langText = document.getElementById('langText');
+        if (langText) {
+            langText.textContent = this.currentLang === 'zh' ? 'EN' : '中';
+        }
     }
 }
 
