@@ -2282,3 +2282,423 @@ textarea:focus {
         border: 1px solid rgba(255, 255, 255, 0.5);
     }
 }
+
+/* AI关键词提取功能样式 */
+.ai-toggle {
+    position: fixed;
+    top: 20px;
+    right: 140px;
+    width: 60px;
+    height: 50px;
+    border-radius: 25px;
+    border: none;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8em;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+    gap: 2px;
+}
+
+.ai-toggle:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.ai-toggle.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+    animation: pulse-ai 2s ease-in-out infinite;
+}
+
+@keyframes pulse-ai {
+    0%, 100% { 
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+    }
+    50% { 
+        box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6);
+    }
+}
+
+.ai-icon {
+    font-size: 1.5em;
+    line-height: 1;
+}
+
+.ai-status {
+    font-size: 0.7em;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.ai-status-display {
+    background: linear-gradient(135deg, #f8faff 0%, #e6f0ff 100%);
+    border: 2px solid #667eea;
+    border-radius: 20px;
+    padding: 8px 16px;
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9em;
+    transition: all 0.3s ease;
+}
+
+.ai-status-display.loading {
+    border-color: #ed8936;
+    background: linear-gradient(135deg, #fffaf0 0%, #fef5e7 100%);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.ai-status-display.ready {
+    border-color: #48bb78;
+    background: linear-gradient(135deg, #f0fff4 0%, #e6fffa 100%);
+}
+
+.ai-status-display.error {
+    border-color: #f56565;
+    background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+}
+
+.ai-status-display.disabled {
+    border-color: #a0aec0;
+    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+    opacity: 0.7;
+}
+
+.status-icon {
+    font-size: 1.2em;
+}
+
+.status-text {
+    font-weight: 500;
+    color: #4a5568;
+}
+
+.ai-mode-info {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    animation: slideInDown 0.5s ease;
+}
+
+.ai-info-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 500;
+}
+
+.ai-info-icon {
+    font-size: 1.3em;
+}
+
+.ai-analysis-badge {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 15px;
+    font-size: 0.85em;
+    font-weight: 600;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    animation: glow 2s ease-in-out infinite alternate;
+}
+
+.ai-badge-icon {
+    font-size: 1.1em;
+}
+
+/* 岗位推荐AI样式 */
+.job-item.ai-recommended {
+    background: linear-gradient(135deg, #f8faff 0%, #e6f0ff 100%);
+    border-left-color: #667eea;
+    border-left-width: 5px;
+    position: relative;
+}
+
+.job-item.ai-recommended::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 0;
+    height: 0;
+    border-left: 20px solid transparent;
+    border-top: 20px solid #667eea;
+}
+
+.job-item.ai-recommended::after {
+    content: '🔍';
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 0.8em;
+    color: white;
+}
+
+.ai-rec-badge {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 0.7em;
+    font-weight: 600;
+    margin-left: 8px;
+    white-space: nowrap;
+}
+
+/* 建议列表AI样式 */
+.suggestion-item.ai-suggestion {
+    background: linear-gradient(135deg, #f8faff 0%, #e6f0ff 100%);
+    border-left-color: #667eea;
+    border-left-width: 4px;
+}
+
+.ai-suggestion-badge {
+    background: #667eea;
+    color: white;
+    padding: 1px 4px;
+    border-radius: 6px;
+    font-size: 0.7em;
+    font-weight: 600;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+/* 深色主题下的AI样式 */
+.dark-theme .ai-toggle {
+    background: rgba(45, 55, 72, 0.9);
+    color: #e2e8f0;
+}
+
+.dark-theme .ai-status-display {
+    background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+    color: #e2e8f0;
+}
+
+.dark-theme .ai-mode-info {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.dark-theme .job-item.ai-recommended {
+    background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+}
+
+.dark-theme .suggestion-item.ai-suggestion {
+    background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+}
+
+/* 响应式设计 - AI功能 */
+@media (max-width: 768px) {
+    .ai-toggle {
+        right: 85px;
+        width: 50px;
+        height: 45px;
+        font-size: 0.75em;
+    }
+    
+    .ai-status-display {
+        font-size: 0.85em;
+        padding: 6px 12px;
+    }
+    
+    .ai-mode-info {
+        padding: 10px 12px;
+        margin-bottom: 15px;
+    }
+    
+    .ai-info-content {
+        font-size: 0.9em;
+        gap: 8px;
+    }
+    
+    .ai-analysis-badge {
+        font-size: 0.8em;
+        padding: 5px 10px;
+    }
+    
+    .ai-rec-badge,
+    .ai-suggestion-badge {
+        font-size: 0.65em;
+        padding: 1px 4px;
+    }
+}
+
+@media (max-width: 480px) {
+    .ai-toggle {
+        right: 70px;
+        width: 45px;
+        height: 40px;
+    }
+    
+    .ai-icon {
+        font-size: 1.3em;
+    }
+    
+    .ai-status {
+        font-size: 0.65em;
+    }
+    
+    .job-header {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .ai-rec-badge {
+        align-self: flex-start;
+        margin-left: 0;
+        margin-top: 4px;
+    }
+}
+
+/* 打印样式 - 隐藏AI相关元素 */
+@media print {
+    .ai-toggle,
+    .ai-status-display,
+    .ai-mode-info,
+    .ai-analysis-badge {
+        display: none !important;
+    }
+    
+    .ai-rec-badge,
+    .ai-suggestion-badge {
+        display: none !important;
+    }
+}
+
+/* 动画效果 */
+@keyframes slideInDown {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes glow {
+    from {
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    }
+    to {
+        box-shadow: 0 4px 16px rgba(102, 126, 234, 0.5);
+    }
+}
+
+/* 无障碍支持 */
+@media (prefers-reduced-motion: reduce) {
+    .ai-toggle.active,
+    .ai-analysis-badge {
+        animation: none;
+    }
+    
+    .ai-mode-info {
+        animation: none;
+    }
+}
+
+/* 高对比度模式支持 */
+@media (prefers-contrast: high) {
+    .ai-toggle {
+        border: 2px solid currentColor;
+    }
+    
+    .ai-status-display {
+        border-width: 3px;
+    }
+    
+    .ai-analysis-badge,
+    .ai-rec-badge {
+        border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+}
+
+/* 分析按钮AI模式样式 */
+.analyze-btn .btn-icon,
+.analyze-btn .btn-text {
+    transition: all 0.3s ease;
+}
+
+.analyze-btn:not(:disabled):hover .btn-icon {
+    transform: scale(1.1);
+}
+
+/* AI关键词提取特有的样式优化 */
+.ai-keyword-highlight {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-weight: 500;
+}
+
+.keyword-extraction-info {
+    background: #f8faff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 10px 0;
+    font-size: 0.9em;
+    color: #4a5568;
+}
+
+.keyword-extraction-info.dark-theme {
+    background: #2d3748;
+    border-color: #4a5568;
+    color: #e2e8f0;
+}
+
+/* 置信度指示器 */
+.confidence-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 0.75em;
+    font-weight: 600;
+}
+
+.confidence-high {
+    background: #c6f6d5;
+    color: #22543d;
+}
+
+.confidence-medium {
+    background: #feebc8;
+    color: #9c4221;
+}
+
+.confidence-low {
+    background: #fed7d7;
+    color: #9b2c2c;
+}
+
+.dark-theme .confidence-high {
+    background: #22543d;
+    color: #c6f6d5;
+}
+
+.dark-theme .confidence-medium {
+    background: #9c4221;
+    color: #feebc8;
+}
+
+.dark-theme .confidence-low {
+    background: #9b2c2c;
+    color: #fed7d7;
+}
