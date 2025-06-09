@@ -2702,3 +2702,144 @@ textarea:focus {
     background: #9b2c2c;
     color: #fed7d7;
 }
+
+/* AI分析总结样式 */
+.ai-summary-box {
+    background: linear-gradient(135deg, #f8faff 0%, #e6f0ff 100%);
+    border: 2px solid #667eea;
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.ai-summary-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    font-weight: 600;
+    color: #667eea;
+}
+
+.ai-summary-icon {
+    font-size: 1.2em;
+}
+
+.ai-summary-content ul {
+    margin: 8px 0;
+    padding-left: 20px;
+}
+
+.ai-summary-content li {
+    margin: 4px 0;
+    color: #4a5568;
+}
+
+/* AI洞察框样式 */
+.ai-insight-box {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border-left: 4px solid #0ea5e9;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-top: 12px;
+}
+
+.ai-insight-box h5 {
+    margin: 0 0 8px 0;
+    color: #0c4a6e;
+    font-size: 0.9em;
+}
+
+.ai-insight-box p {
+    margin: 0;
+    color: #0c4a6e;
+    font-size: 0.85em;
+    line-height: 1.4;
+}
+
+/* AI检测标识 */
+.ai-detected {
+    background: #0ea5e9;
+    color: white;
+    padding: 1px 4px;
+    border-radius: 6px;
+    font-size: 0.7em;
+    font-weight: 600;
+    margin-left: 6px;
+}
+
+/* 状态样式 */
+.subcategory-item.completed {
+    border-left: 3px solid #48bb78;
+}
+
+.subcategory-item.missing {
+    border-left: 3px solid #f56565;
+    opacity: 0.7;
+}
+
+.subcategory-item.has-skills,
+.subcategory-item.has-experience,
+.subcategory-item.has-achievement {
+    border-left: 3px solid #667eea;
+}
+
+.subcategory-status {
+    font-weight: 500;
+    font-size: 0.9em;
+}
+
+/* 超分部分样式 */
+.extra-score-section {
+    background: #fff8e1;
+    border: 1px solid #ffb74d;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 12px;
+}
+
+.extra-score-section h5 {
+    margin: 0 0 8px 0;
+    color: #ef6c00;
+    font-size: 0.9em;
+}
+
+.extra-score-item {
+    background: white;
+    padding: 6px 10px;
+    border-radius: 6px;
+    margin: 4px 0;
+    font-size: 0.85em;
+    color: #bf360c;
+    font-weight: 500;
+}
+
+/* 深色主题适配 */
+.dark-theme .ai-summary-box {
+    background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+    border-color: #667eea;
+}
+
+.dark-theme .ai-insight-box {
+    background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+    border-left-color: #0ea5e9;
+}
+
+.dark-theme .ai-insight-box h5,
+.dark-theme .ai-insight-box p {
+    color: #e2e8f0;
+}
+
+.dark-theme .extra-score-section {
+    background: #2d3748;
+    border-color: #ed8936;
+}
+
+.dark-theme .extra-score-section h5 {
+    color: #ed8936;
+}
+
+.dark-theme .extra-score-item {
+    background: #1a202c;
+    color: #ed8936;
+}
