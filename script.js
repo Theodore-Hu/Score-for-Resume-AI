@@ -1,3 +1,12 @@
+// 在 script.js 开头添加
+// 抑制AudioContext错误（通常由浏览器扩展引起）
+window.addEventListener('error', function(e) {
+    if (e.message && e.message.includes('AudioContext')) {
+        e.preventDefault();
+        return false;
+    }
+});
+
 // 应用程序主类 - AI关键词提取版
 class ResumeScoreApp {
     constructor() {
@@ -954,7 +963,7 @@ class PerformanceMonitor {
 let app;
 function initializeApp() {
     try {
-        app = new ResumeScoreApp();
+        window.app = new ResumeScoreApp();
         
         // 检查依赖库
         if (typeof pdfjsLib !== 'undefined') {
@@ -987,6 +996,9 @@ function initializeApp() {
         showError('应用程序初始化失败，请刷新页面重试');
     }
 }
+
+// 确保函数在全局作用域
+window.initializeApp = initializeApp;
 
 // 全局函数（保持向后兼容）
 function toggleLanguage() {
