@@ -207,21 +207,38 @@
             };
             
             console.warn(`${type} CDN failed, using fallback`);
-            if (window.app) {
-                window.app.showToast(errorMessages[type] || `${type} 库加载失败`, 'warning');
-            } else {
-                setTimeout(() => {
-                    if (window.app) {
-                        window.app.showToast(errorMessages[type] || `${type} 库加载失败`, 'warning');
+            // 延迟显示错误，确保app已初始化
+            setTimeout(() => {
+                if (window.app && window.app.showToast) {
+                    window.app.showToast(errorMessages[type] || `${type} 库加载失败`, 'warning');
+                }
+            }, 2000);
+        }
+        
+        // 初始化应用
+        function initApp() {
+            try {
+                if (typeof initializeApp === 'function') {
+                    initializeApp();
+                } else {
+                    console.error('initializeApp function not found');
+                    // 手动创建应用实例
+                    if (typeof ResumeScoreApp !== 'undefined') {
+                        window.app = new ResumeScoreApp();
                     }
-                }, 2000);
+                }
+            } catch (error) {
+                console.error('App initialization failed:', error);
             }
         }
         
-        // 初始化
-        window.addEventListener('DOMContentLoaded', function() {
-            initializeApp();
-        });
+        // 确保DOM完全加载后再初始化
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initApp);
+        } else {
+            // DOM已经加载完成
+            setTimeout(initApp, 100);
+        }
     </script>
     
     <script src="i18n.js"></script>
