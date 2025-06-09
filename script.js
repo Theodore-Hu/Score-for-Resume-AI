@@ -1,10 +1,11 @@
-// 应用程序主类 - 修正版
+// 应用程序主类 - AI增强版
 class ResumeScoreApp {
     constructor() {
         this.currentAnalysis = null;
         this.isDarkTheme = localStorage.getItem('theme') === 'dark';
         this.isProcessing = false;
         this.eventListeners = new Map();
+        this.aiEnhancer = window.aiEnhancer; // 引用AI增强器
         
         this.initializeApp();
     }
@@ -14,6 +15,52 @@ class ResumeScoreApp {
         this.setupEventListeners();
         this.setupKeyboardShortcuts();
         this.updateCharacterCount();
+        this.setupAIFeatures();
+    }
+    
+    setupAIFeatures() {
+        // 初始化AI功能UI
+        this.updateAIModeUI();
+        
+        // 监听AI状态变化
+        if (this.aiEnhancer) {
+            this.aiEnhancer.updateAIModeUI = () => {
+                this.updateAIModeUI();
+            };
+        }
+    }
+    
+    updateAIModeUI() {
+        const aiModeInfo = document.getElementById('aiModeInfo');
+        const aiToggle = document.querySelector('.ai-toggle');
+        const analyzeBtn = document.querySelector('.analyze-btn');
+        
+        const isAIEnabled = this.aiEnhancer && this.aiEnhancer.isAIEnabled();
+        
+        // 更新AI模式信息显示
+        if (aiModeInfo) {
+            aiModeInfo.style.display = isAIEnabled ? 'block' : 'none';
+        }
+        
+        // 更新AI切换按钮样式
+        if (aiToggle) {
+            aiToggle.classList.toggle('active', isAIEnabled);
+        }
+        
+        // 更新分析按钮文本
+        if (analyzeBtn) {
+            const btnText = analyzeBtn.querySelector('.btn-text');
+            const btnIcon = analyzeBtn.querySelector('.btn-icon');
+            if (btnText && btnIcon) {
+                if (isAIEnabled) {
+                    btnText.textContent = 'AI智能分析';
+                    btnIcon.textContent = '🧠';
+                } else {
+                    btnText.textContent = '开始分析';
+                    btnIcon.textContent = '🔍';
+                }
+            }
+        }
     }
     
     setupTheme() {
@@ -107,6 +154,12 @@ class ResumeScoreApp {
             if (e.key === 'Escape') {
                 this.closeModals();
             }
+            
+            // AI模式快捷键
+            if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
+                e.preventDefault();
+                this.toggleAIMode();
+            }
         };
         document.addEventListener('keydown', keydownHandler);
         this.eventListeners.set('document-keydown', { element: document, event: 'keydown', handler: keydownHandler });
@@ -145,7 +198,9 @@ class ResumeScoreApp {
         const analyzeBtn = document.querySelector('.analyze-btn');
         
         if (text.length > 100) {
-            analyzeBtn.style.background = '#48bb78';
+            analyzeBtn.style.background = this.aiEnhancer && this.aiEnhancer.isAIEnabled() ? 
+                'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 
+                '#48bb78';
             analyzeBtn.disabled = false;
         } else {
             analyzeBtn.style.background = '#ccc';
@@ -166,7 +221,9 @@ class ResumeScoreApp {
         }
         
         this.isProcessing = true;
-        this.showLoading('正在解析文件...');
+        const isAIMode = this.aiEnhancer && this.aiEnhancer.isAIEnabled();
+        const loadingMessage = isAIMode ? '正在解析文件 (AI模式)...' : '正在解析文件...';
+        this.showLoading(loadingMessage);
         
         try {
             const startTime = performance.now();
@@ -198,7 +255,6 @@ class ResumeScoreApp {
         }
     }
     
-    // 增强的文件验证
     validateFile(file) {
         if (file.size > 10 * 1024 * 1024) {
             return { valid: false, message: '文件大小超过10MB限制' };
@@ -249,21 +305,51 @@ class ResumeScoreApp {
         }
         
         this.isProcessing = true;
-        this.showLoading('正在分析简历...');
+        
+        // 根据AI模式选择不同的加载提示
+        const isAIMode = this.aiEnhancer && this.aiEnhancer.isAIEnabled();
+        const loadingMessage = isAIMode ? '正在进行AI智能分析...' : '正在分析简历...';
+        this.showLoading(loadingMessage);
         
         try {
             const startTime = performance.now();
-            await new Promise(resolve => setTimeout(resolve, 1500));
             
-            const scorer = new ResumeScorer();
-            const result = scorer.scoreResume(text);
+            // 模拟处理时间（AI模式稍长）
+            const processingTime = isAIMode ? 2500 : 1500;
+            await new Promise(resolve => setTimeout(resolve, processingTime));
+            
+            let result;
+            
+            if (isAIMode && window.AIEnhancedResumeScorer) {
+                // 使用AI增强评分器
+                console.log('使用AI增强评分器进行分析...');
+                const aiScorer = new AIEnhancedResumeScorer();
+                result = await aiScorer.scoreResumeWithAI(text);
+                
+                if (result.aiEnhanced) {
+                    console.log('AI分析成功，置信度:', result.aiConfidence);
+                } else {
+                    console.log('AI分析失败，使用传统方法');
+                }
+            } else {
+                // 使用传统评分器
+                console.log('使用传统评分器进行分析...');
+                const scorer = new ResumeScorer();
+                result = scorer.scoreResume(text);
+            }
             
             const analysisTime = performance.now() - startTime;
             console.log(`Analysis time: ${analysisTime.toFixed(2)}ms`);
             
             this.hideLoading();
             this.displayResults(result);
-            this.showToast('简历分析完成！', 'success');
+            
+            // 根据是否使用AI显示不同的成功消息
+            const successMessage = result.aiEnhanced ? 
+                `AI智能分析完成！(置信度: ${Math.round(result.aiConfidence * 100)}%)` : 
+                '简历分析完成！';
+            this.showToast(successMessage, 'success');
+            
         } catch (error) {
             this.hideLoading();
             this.handleError(error, 'analyzeResume');
@@ -272,7 +358,6 @@ class ResumeScoreApp {
         }
     }
     
-    // 错误处理方法
     handleError(error, context = 'Unknown') {
         console.error(`Error in ${context}:`, error);
         
@@ -300,6 +385,9 @@ class ResumeScoreApp {
         resultSection.style.display = 'block';
         resultSection.scrollIntoView({ behavior: 'smooth' });
         
+        // 显示AI分析标识
+        this.updateAIAnalysisBadge(result);
+        
         this.updateTotalScore(result);
         this.updateDetailedScores(result.categoryScores, result.specializations);
         this.updateJobRecommendations(result.jobRecommendations);
@@ -310,9 +398,22 @@ class ResumeScoreApp {
         }, 500);
     }
     
-    // 修正后的总分显示更新
+    updateAIAnalysisBadge(result) {
+        const aiAnalysisBadge = document.getElementById('aiAnalysisBadge');
+        if (aiAnalysisBadge) {
+            if (result.aiEnhanced) {
+                aiAnalysisBadge.style.display = 'flex';
+                const badgeText = aiAnalysisBadge.querySelector('.ai-badge-text');
+                if (badgeText) {
+                    badgeText.textContent = `AI智能分析 (置信度: ${Math.round(result.aiConfidence * 100)}%)`;
+                }
+            } else {
+                aiAnalysisBadge.style.display = 'none';
+            }
+        }
+    }
+    
     updateTotalScore(result) {
-        // 添加安全检查
         if (!result || typeof result.totalScore !== 'number') {
             console.error('Invalid result data:', result);
             this.showToast('数据错误，请重新分析', 'error');
@@ -324,7 +425,6 @@ class ResumeScoreApp {
         const summaryElement = document.getElementById('scoreSummary');
         const circleElement = document.getElementById('scoreCircle');
         
-        // 确保元素存在
         if (!scoreElement || !levelElement || !summaryElement || !circleElement) {
             console.error('Required DOM elements not found');
             return;
@@ -394,6 +494,11 @@ class ResumeScoreApp {
             summaryElement.innerHTML += `<br><small style="color: #667eea; font-weight: 500; margin-top: 8px; display: inline-block;">🌟 专精加成让您脱颖而出！</small>`;
         }
         
+        // AI增强标识
+        if (result.aiEnhanced) {
+            summaryElement.innerHTML += `<br><small style="color: #667eea; font-weight: 500; margin-top: 4px; display: inline-block;">🤖 AI智能分析增强</small>`;
+        }
+        
         if (result.specializations && result.specializations.length > 0) {
             setTimeout(() => {
                 this.showSpecializationInfo(result.specializations, result.specializationBonus);
@@ -414,7 +519,8 @@ class ResumeScoreApp {
         
         const categoryMap = {
             skill: '🔧 技能专精',
-            experience: '💼 实践专精'
+            experience: '💼 实践专精',
+            achievement: '🏆 荣誉专精'
         };
         
         const groupedSpecs = {};
@@ -429,7 +535,10 @@ class ResumeScoreApp {
         let specDetails = '';
         Object.entries(groupedSpecs).forEach(([category, specs]) => {
             const categoryName = categoryMap[category] || '🌟 其他专精';
-            const specList = specs.map(spec => spec.description).join(' • ');
+            const specList = specs.map(spec => {
+                const aiFlag = spec.aiEnhanced ? ' (AI识别)' : '';
+                return `${spec.description}${aiFlag}`;
+            }).join(' • ');
             specDetails += `<div class="spec-category">${categoryName}: ${specList}</div>`;
         });
         
@@ -513,7 +622,6 @@ class ResumeScoreApp {
         return '#e53e3e';
     }
     
-    // 在 updateDetailedScores 方法中，找到处理 categorySpecializations 的部分，修改为：
     updateDetailedScores(categoryScores, specializations) {
         const container = document.getElementById('scoreCategories');
         const categoryInfo = {
@@ -578,6 +686,12 @@ class ResumeScoreApp {
             item.className = 'score-item';
             item.style.animationDelay = `${index * 0.1}s`;
             
+            // 检查是否有AI加成
+            const hasAIBonus = scoreData.aiBonus && scoreData.aiBonus > 0;
+            if (hasAIBonus) {
+                item.classList.add('ai-enhanced');
+            }
+            
             const baseScore = scoreData.total;
             const maxScore = this.getMaxScore(category);
             
@@ -589,21 +703,8 @@ class ResumeScoreApp {
                 categorySpecializations = specializations.filter(spec => spec.category === 'skill');
                 specializationBonus = categorySpecializations.reduce((sum, spec) => sum + spec.bonus, 0);
             } else if (category === 'experience') {
-                // 修复：正确筛选实践经验的专精
-                categorySpecializations = specializations.filter(spec => 
-                    spec.category === 'experience' || 
-                    spec.type === 'internship' || 
-                    spec.type === 'project' || 
-                    spec.type === 'academic'
-                );
+                categorySpecializations = specializations.filter(spec => spec.category === 'experience');
                 specializationBonus = categorySpecializations.reduce((sum, spec) => sum + spec.bonus, 0);
-                
-                // 调试日志
-                console.log('实践经验专精检测:');
-                console.log('所有专精:', specializations);
-                console.log('筛选出的经验专精:', categorySpecializations);
-                console.log('专精加成:', specializationBonus);
-                
             } else if (category === 'achievements') {
                 categorySpecializations = specializations.filter(spec => spec.category === 'achievement');
                 specializationBonus = categorySpecializations.reduce((sum, spec) => sum + spec.bonus, 0);
@@ -625,6 +726,7 @@ class ResumeScoreApp {
                             ${scoreLevel.text}
                         </span>
                         ${hasSpecialization ? '<span class="specialization-badge">⭐ 专精</span>' : ''}
+                        ${hasAIBonus ? '<span class="ai-bonus-badge">🤖 AI</span>' : ''}
                     </div>
                     <div class="score-right-section">
                         <div class="progress-container">
@@ -643,7 +745,7 @@ class ResumeScoreApp {
                                 <div class="progress-legend">
                                     <span class="legend-item base">
                                         <span class="legend-color base"></span>
-                                        基础 ${baseScore}
+                                        基础 ${baseScore}${hasAIBonus ? `(+${scoreData.aiBonus})` : ''}
                                     </span>
                                     ${hasSpecialization ? 
                                         `<span class="legend-item bonus">
@@ -658,9 +760,9 @@ class ResumeScoreApp {
                             <div class="main-category-score ${scoreLevel.scoreClass}">
                                 ${displayScore}
                             </div>
-                            ${hasSpecialization ? 
+                            ${hasSpecialization || hasAIBonus ? 
                                 `<div class="score-composition-mini">
-                                    ${baseScore}<span class="plus">+</span>${specializationBonus}
+                                    ${baseScore}${hasSpecialization ? `<span class="plus">+</span>${specializationBonus}` : ''}
                                  </div>` : ''}
                         </div>
                         <button class="toggle-detail collapsed" onclick="app.toggleCategoryDetail('${category}')">
@@ -681,13 +783,14 @@ class ResumeScoreApp {
                             </div>
                             <div class="spec-content">
                                 ${category === 'achievements' ? 
-                                    // 奖励荣誉专精显示具体超出项目
                                     this.generateAchievementSpecDetails(scoreData.extraScore || {}) :
-                                    // 其他类别显示原有逻辑
                                     categorySpecializations.map(spec => `
                                         <div class="spec-item">
                                             <div class="spec-boost">
-                                                <span class="boost-label">${spec.description}</span>
+                                                <span class="boost-label">
+                                                    ${spec.description}
+                                                    ${spec.aiEnhanced ? '<span class="ai-enhanced-tag">🤖 AI识别</span>' : ''}
+                                                </span>
                                                 <span class="boost-value">+${spec.bonus} 分</span>
                                             </div>
                                         </div>
@@ -697,6 +800,16 @@ class ResumeScoreApp {
                                     <span class="boost-label">专精加成总计</span>
                                     <span class="boost-value">+${specializationBonus} 分</span>
                                 </div>
+                            </div>
+                         </div>` : ''}
+                    ${hasAIBonus ? 
+                        `<div class="ai-bonus-explanation">
+                            <div class="ai-bonus-header">
+                                <span class="ai-bonus-icon">🤖</span>
+                                <span class="ai-bonus-title">AI分析加成</span>
+                            </div>
+                            <div class="ai-bonus-content">
+                                <p>基于AI高置信度分析，给予 <strong>+${scoreData.aiBonus}</strong> 分加成</p>
                             </div>
                          </div>` : ''}
                     ${category === 'education' && baseScore > maxScore ? 
@@ -745,15 +858,12 @@ class ResumeScoreApp {
                 score = scoreData.details[key] ? 2 : 0;
                 maxScore = 2;
             } else if (category === 'achievements') {
-                // 奖励荣誉特殊处理
                 score = scoreData.details[key] || 0;
-                maxScore = 5; // 修正：所有细项满分都是5分
+                maxScore = 5;
                 
-                // 检查是否有超出分数
                 let hasExtraScore = false;
                 let extraScore = 0;
                 
-                // 根据细项类型检查超出分数
                 if (key === 'leadership' && scoreData.extraScore?.leadership) {
                     hasExtraScore = true;
                     extraScore = scoreData.extraScore.leadership;
@@ -794,7 +904,6 @@ class ResumeScoreApp {
                     </div>
                 `;
             } else {
-                // 其他类别的处理保持不变
                 score = scoreData.details[key] || 0;
                 if (category === 'education') {
                     const maxScoreMap = {
@@ -834,8 +943,7 @@ class ResumeScoreApp {
         
         return html;
     }
-
-    // 在 ResumeScoreApp 类中修正这个方法
+    
     generateAchievementSpecDetails(extraScore) {
         const categoryMap = {
             leadership: '学生干部',
@@ -867,7 +975,6 @@ class ResumeScoreApp {
             }
         });
         
-        // 如果没有专精项目，显示说明
         if (html === '') {
             html = `
                 <div class="spec-item">
@@ -881,7 +988,7 @@ class ResumeScoreApp {
         
         return html;
     }
-
+    
     toggleCategoryDetail(category) {
         const detailDiv = document.getElementById(`detail-${category}`);
         const button = document.querySelector(`button[onclick="app.toggleCategoryDetail('${category}')"]`);
@@ -933,6 +1040,12 @@ class ResumeScoreApp {
             item.className = 'job-item';
             item.style.animationDelay = (index * 0.1) + 's';
             
+            // 添加AI推荐标识
+            const isAIRecommended = job.category.includes('AI推荐');
+            if (isAIRecommended) {
+                item.classList.add('ai-recommended');
+            }
+            
             let borderColor = '#667eea';
             if (job.match >= 85) borderColor = '#48bb78';
             else if (job.match >= 70) borderColor = '#ed8936';
@@ -941,8 +1054,13 @@ class ResumeScoreApp {
             item.style.borderLeftColor = borderColor;
             
             item.innerHTML = `
-                <div class="job-title">${job.category}</div>
-                <div class="job-match" style="color: ${borderColor};">匹配度: ${Math.round(job.match)}%</div>
+                <div class="job-header">
+                    <div class="job-title">
+                        ${job.category}
+                        ${isAIRecommended ? '<span class="ai-rec-badge">🤖 AI推荐</span>' : ''}
+                    </div>
+                    <div class="job-match" style="color: ${borderColor};">匹配度: ${Math.round(job.match)}%</div>
+                </div>
                 <div class="job-reason">${job.reason}</div>
             `;
             
@@ -956,8 +1074,10 @@ class ResumeScoreApp {
         
         suggestions.forEach((suggestion, index) => {
             const item = document.createElement('div');
-            item.className = suggestion.includes('质量很好') || suggestion.includes('名校背景') || suggestion.includes('充分利用') ? 
-                              'suggestion-item positive' : 'suggestion-item';
+            const isPositive = suggestion.includes('质量很好') || suggestion.includes('名校背景') || suggestion.includes('充分利用');
+            const isAISuggestion = suggestion.includes('AI分析') || suggestion.includes('AI识别');
+            
+            item.className = `suggestion-item ${isPositive ? 'positive' : ''} ${isAISuggestion ? 'ai-suggestion' : ''}`;
             item.style.animationDelay = (index * 0.1) + 's';
             
             let icon = '💡';
@@ -966,11 +1086,13 @@ class ResumeScoreApp {
             if (suggestion.includes('实习') || suggestion.includes('项目')) icon = '💼';
             if (suggestion.includes('竞赛') || suggestion.includes('奖学金')) icon = '🏆';
             if (suggestion.includes('质量很好') || suggestion.includes('名校')) icon = '⭐';
+            if (isAISuggestion) icon = '🤖';
             
             item.innerHTML = `
                 <div style="display: flex; align-items: flex-start; gap: 10px;">
                     <span style="font-size: 1.2em; margin-top: 2px;">${icon}</span>
                     <span>${suggestion}</span>
+                    ${isAISuggestion ? '<span class="ai-suggestion-badge">AI</span>' : ''}
                 </div>
             `;
             
@@ -1075,7 +1197,7 @@ class ResumeScoreApp {
         
         try {
             const reportContent = this.generateReport(this.currentAnalysis);
-            this.downloadFile(reportContent, `简历分析报告_${new Date().toISOString().slice(0, 10)}.txt`);
+            this.downloadFile(reportContent, `简历分析报告${this.currentAnalysis.aiEnhanced ? '_AI增强版' : ''}_${new Date().toISOString().slice(0, 10)}.txt`);
             this.showToast('报告导出成功！', 'success');
         } catch (error) {
             this.showToast('导出失败: ' + error.message, 'error');
@@ -1101,8 +1223,8 @@ class ResumeScoreApp {
         }
         
         const shareData = {
-            title: '我的简历评分结果',
-            text: `我的简历获得了 ${this.currentAnalysis.totalScore} 分！`,
+            title: `我的简历评分结果${this.currentAnalysis.aiEnhanced ? ' (AI增强版)' : ''}`,
+            text: `我的简历获得了 ${this.currentAnalysis.totalScore} 分！${this.currentAnalysis.aiEnhanced ? ' (AI智能分析)' : ''}`,
             url: window.location.href
         };
         
@@ -1145,6 +1267,19 @@ class ResumeScoreApp {
         this.showToast(`已切换到${this.isDarkTheme ? '深色' : '浅色'}模式`, 'info');
     }
     
+    toggleAIMode() {
+        if (this.aiEnhancer) {
+            const enabled = this.aiEnhancer.toggleAIMode();
+            this.updateAIModeUI();
+            this.checkTextInput(); // 更新按钮样式
+            
+            const message = enabled ? 
+                'AI智能模式已启用，将使用机器学习模型进行深度分析' : 
+                'AI模式已关闭，将使用传统算法分析';
+            this.showToast(message, enabled ? 'success' : 'info', 4000);
+        }
+    }
+    
     toggleKeyboardShortcuts() {
         const shortcuts = document.getElementById('keyboardShortcuts');
         shortcuts.style.display = shortcuts.style.display === 'none' ? 'block' : 'none';
@@ -1155,9 +1290,11 @@ class ResumeScoreApp {
     }
     
     generateReport(analysis) {
-        let report = `简历分析报告
+        let report = `简历分析报告${analysis.aiEnhanced ? ' (AI增强版)' : ''}
 ==================
 生成时间: ${new Date().toLocaleString()}
+分析模式: ${analysis.aiEnhanced ? 'AI智能分析' : '传统分析'}
+${analysis.aiEnhanced ? `AI置信度: ${Math.round(analysis.aiConfidence * 100)}%` : ''}
 
 📊 总体评分
 基础分: ${analysis.baseScore}/100分
@@ -1165,14 +1302,25 @@ class ResumeScoreApp {
 总分: ${analysis.totalScore}分
 等级: ${this.getScoreLevel(analysis.totalScore).text}
 评语: ${this.getScoreLevel(analysis.totalScore).summary}
-
 `;
         
+        if (analysis.aiEnhanced && analysis.aiAnalysis) {
+            report += `
+🤖 AI分析洞察
+分析置信度: ${Math.round(analysis.aiConfidence * 100)}%
+识别句子数: ${Object.values(analysis.aiAnalysis.categorized).reduce((sum, cat) => sum + cat.length, 0)}
+结构化数据提取: ${analysis.aiAnalysis.structured ? '成功' : '失败'}
+AI模型版本: Universal Sentence Encoder v1.3
+`;
+        }
+        
         if (analysis.specializations && analysis.specializations.length > 0) {
-            report += `⭐ 专精领域识别
+            report += `
+⭐ 专精领域识别
 `;
             analysis.specializations.forEach(spec => {
-                report += `- ${spec.description} (+${spec.bonus}分加成)
+                const aiFlag = spec.aiEnhanced ? ' (AI识别)' : '';
+                report += `- ${spec.description}${aiFlag} (+${spec.bonus}分加成)
 `;
             });
             report += '\n';
@@ -1191,12 +1339,13 @@ class ResumeScoreApp {
         Object.entries(analysis.categoryScores).forEach(([category, scoreData]) => {
             const score = scoreData.total;
             const maxScore = this.getMaxScore(category);
+            const aiBonus = scoreData.aiBonus ? ` (+${scoreData.aiBonus} AI加成)` : '';
             
             if (category === 'education' && score > maxScore) {
-                report += `- ${categoryNames[category]}: ${score}/${maxScore}分 (超分奖励)
+                report += `- ${categoryNames[category]}: ${score}/${maxScore}分 (超分奖励)${aiBonus}
 `;
             } else {
-                report += `- ${categoryNames[category]}: ${score}/${maxScore}分
+                report += `- ${categoryNames[category]}: ${score}/${maxScore}分${aiBonus}
 `;
             }
         });
@@ -1205,7 +1354,8 @@ class ResumeScoreApp {
 🎯 岗位推荐
 `;
         analysis.jobRecommendations.forEach((job, index) => {
-            report += `${index + 1}. ${job.category} (匹配度: ${Math.round(job.match)}%)
+            const aiFlag = job.category.includes('AI推荐') ? ' (AI推荐)' : '';
+            report += `${index + 1}. ${job.category}${aiFlag} (匹配度: ${Math.round(job.match)}%)
    推荐理由: ${job.reason}
 `;
         });
@@ -1214,13 +1364,15 @@ class ResumeScoreApp {
 💡 改进建议
 `;
         analysis.suggestions.forEach((suggestion, index) => {
-            report += `${index + 1}. ${suggestion}
+            const aiFlag = suggestion.includes('AI分析') || suggestion.includes('AI识别') ? ' (AI建议)' : '';
+            report += `${index + 1}. ${suggestion}${aiFlag}
 `;
         });
         
         report += `
 ---
-本报告由简历评分工具自动生成
+本报告由简历评分工具${analysis.aiEnhanced ? 'AI智能版' : ''}自动生成
+${analysis.aiEnhanced ? 'AI技术支持: TensorFlow.js + Universal Sentence Encoder' : ''}
 建议结合个人实际情况和目标岗位要求进行参考`;
         
         return report;
@@ -1256,6 +1408,14 @@ class PerformanceMonitor {
         console.log(`Analysis time: ${duration.toFixed(2)}ms`);
         return duration;
     }
+    
+    static trackAIModelLoad(startTime) {
+        const endTime = performance.now();
+        const duration = endTime - startTime;
+        
+        console.log(`AI model loading time: ${duration.toFixed(2)}ms`);
+        return duration;
+    }
 }
 
 // 初始化应用程序
@@ -1264,6 +1424,7 @@ function initializeApp() {
     try {
         app = new ResumeScoreApp();
         
+        // 检查依赖库
         if (typeof pdfjsLib !== 'undefined') {
             console.log('PDF.js 库加载成功');
         } else {
@@ -1276,11 +1437,24 @@ function initializeApp() {
             console.warn('Mammoth 库未加载，Word解析功能可能不可用');
         }
         
+        // 检查AI库
+        if (typeof tf !== 'undefined') {
+            console.log('TensorFlow.js 库加载成功');
+        } else {
+            console.warn('TensorFlow.js 库未加载，AI功能不可用');
+        }
+        
+        if (typeof use !== 'undefined') {
+            console.log('Universal Sentence Encoder 库加载成功');
+        } else {
+            console.warn('Universal Sentence Encoder 库未加载，AI功能不可用');
+        }
+        
         if (typeof i18n !== 'undefined') {
             i18n.updateUI();
         }
         
-        console.log('应用程序初始化完成');
+        console.log('应用程序初始化完成 (AI增强版)');
         
     } catch (error) {
         console.error('应用程序初始化失败:', error);
@@ -1302,6 +1476,12 @@ function toggleLanguage() {
 function toggleTheme() {
     if (app) {
         app.toggleTheme();
+    }
+}
+
+function toggleAIMode() {
+    if (app) {
+        app.toggleAIMode();
     }
 }
 
@@ -1387,14 +1567,32 @@ window.addEventListener('beforeunload', function() {
     if (app) {
         app.destroy();
     }
+    
+    // 清理TensorFlow.js资源
+    if (typeof tf !== 'undefined') {
+        try {
+            tf.disposeVariables();
+        } catch (error) {
+            console.warn('TensorFlow.js资源清理失败:', error);
+        }
+    }
 });
 
 // 页面可见性改变时的处理
 document.addEventListener('visibilitychange', function() {
     if (document.hidden) {
         console.log('页面隐藏');
+        // 暂停AI模型使用以节省资源
+        if (window.aiEnhancer && window.aiEnhancer.model) {
+            console.log('页面隐藏，暂停AI资源使用');
+        }
     } else {
         console.log('页面可见');
+        // 恢复AI模型使用
+        if (window.aiEnhancer && window.aiEnhancer.isEnabled && !window.aiEnhancer.model) {
+            console.log('页面恢复，重新加载AI模型');
+            window.aiEnhancer.loadModel().catch(console.error);
+        }
     }
 });
 
@@ -1403,13 +1601,46 @@ window.addEventListener('online', function() {
     if (app) {
         app.showToast('网络连接已恢复', 'success');
     }
+    
+    // 网络恢复时重新加载AI模型（如果需要）
+    if (window.aiEnhancer && window.aiEnhancer.isEnabled && !window.aiEnhancer.model) {
+        console.log('网络恢复，尝试重新加载AI模型');
+        window.aiEnhancer.loadModel().catch(error => {
+            console.warn('网络恢复后AI模型加载失败:', error);
+        });
+    }
 });
 
 window.addEventListener('offline', function() {
     if (app) {
-        app.showToast('网络连接已断开，某些功能可能不可用', 'warning');
+        app.showToast('网络连接已断开，AI功能可能不可用', 'warning');
     }
 });
+
+// 内存使用监控
+function monitorMemoryUsage() {
+    if ('memory' in performance) {
+        const memory = performance.memory;
+        const usedJSSize = Math.round(memory.usedJSHeapSize / 1024 / 1024);
+        const totalJSSize = Math.round(memory.totalJSHeapSize / 1024 / 1024);
+        const jsHeapSizeLimit = Math.round(memory.jsHeapSizeLimit / 1024 / 1024);
+        
+        console.log(`内存使用情况: ${usedJSSize}MB / ${totalJSSize}MB (限制: ${jsHeapSizeLimit}MB)`);
+        
+        // 如果内存使用超过80%，发出警告
+        if (usedJSSize / jsHeapSizeLimit > 0.8) {
+            console.warn('内存使用率较高，建议刷新页面');
+            if (app) {
+                app.showToast('内存使用率较高，建议刷新页面以获得最佳性能', 'warning', 5000);
+            }
+        }
+    }
+}
+
+// 定期监控内存使用（仅在开发环境下）
+if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    setInterval(monitorMemoryUsage, 30000); // 每30秒检查一次
+}
 
 // 性能监控
 if ('performance' in window) {
@@ -1422,11 +1653,219 @@ if ('performance' in window) {
             if (loadTime > 3000) {
                 console.warn('页面加载时间较长，可能需要优化');
             }
+            
+            // AI库加载时间监控
+            if (typeof tf !== 'undefined' && typeof use !== 'undefined') {
+                console.log('AI库加载完成');
+            }
         }, 0);
     });
 }
 
+// AI模型预热功能
+async function warmupAIModel() {
+    if (window.aiEnhancer && window.aiEnhancer.model) {
+        try {
+            console.log('开始AI模型预热...');
+            const dummyText = ['这是一个测试句子', '用于预热AI模型'];
+            await window.aiEnhancer.model.embed(dummyText);
+            console.log('AI模型预热完成');
+        } catch (error) {
+            console.warn('AI模型预热失败:', error);
+        }
+    }
+}
+
+// 在AI模型加载完成后进行预热
+window.addEventListener('ai-model-ready', warmupAIModel);
+
+// 响应式设计支持
+function handleResponsiveDesign() {
+    const isMobile = window.innerWidth <= 768;
+    const isTablet = window.innerWidth <= 1024 && window.innerWidth > 768;
+    
+    // 根据屏幕尺寸调整AI功能
+    if (isMobile && window.aiEnhancer) {
+        // 移动设备上可以考虑禁用AI功能以节省资源
+        console.log('移动设备检测，AI功能保持启用但可能性能较低');
+    }
+    
+    // 调整UI元素位置
+    const aiToggle = document.querySelector('.ai-toggle');
+    const langToggle = document.querySelector('.language-toggle');
+    const themeToggle = document.querySelector('.theme-toggle');
+    
+    if (isMobile) {
+        if (aiToggle) aiToggle.style.right = '15px';
+        if (langToggle) langToggle.style.right = '85px';
+        if (themeToggle) themeToggle.style.right = '15px';
+    }
+}
+
+// 监听窗口大小变化
+window.addEventListener('resize', handleResponsiveDesign);
+window.addEventListener('orientationchange', handleResponsiveDesign);
+
+// 初始检查
+handleResponsiveDesign();
+
+// 键盘快捷键增强
+document.addEventListener('keydown', function(e) {
+    // Ctrl/Cmd + I 切换AI模式
+    if ((e.ctrlKey || e.metaKey) && e.key === 'i' && !e.shiftKey) {
+        e.preventDefault();
+        toggleAIMode();
+    }
+    
+    // Ctrl/Cmd + Shift + D 开启调试模式
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'D') {
+        e.preventDefault();
+        toggleDebugMode();
+    }
+});
+
+// 调试模式
+let debugMode = false;
+function toggleDebugMode() {
+    debugMode = !debugMode;
+    
+    if (debugMode) {
+        console.log('调试模式已启用');
+        // 显示调试信息
+        document.body.classList.add('debug-mode');
+        
+        // 创建调试面板
+        createDebugPanel();
+        
+        if (app) {
+            app.showToast('调试模式已启用', 'info');
+        }
+    } else {
+        console.log('调试模式已关闭');
+        document.body.classList.remove('debug-mode');
+        
+        // 移除调试面板
+        const debugPanel = document.getElementById('debugPanel');
+        if (debugPanel) {
+            debugPanel.remove();
+        }
+        
+        if (app) {
+            app.showToast('调试模式已关闭', 'info');
+        }
+    }
+}
+
+function createDebugPanel() {
+    if (document.getElementById('debugPanel')) return;
+    
+    const debugPanel = document.createElement('div');
+    debugPanel.id = 'debugPanel';
+    debugPanel.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        width: 300px;
+        max-height: 400px;
+        background: rgba(0, 0, 0, 0.9);
+        color: white;
+        padding: 15px;
+        border-radius: 8px;
+        font-family: monospace;
+        font-size: 12px;
+        overflow-y: auto;
+        z-index: 2000;
+        backdrop-filter: blur(10px);
+    `;
+    
+    debugPanel.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span style="font-weight: bold;">🐛 调试面板</span>
+            <button onclick="toggleDebugMode()" style="background: none; border: none; color: white; cursor: pointer;">✖</button>
+        </div>
+        <div id="debugContent">
+            <div>AI状态: <span id="debugAIStatus">检查中...</span></div>
+            <div>内存使用: <span id="debugMemory">检查中...</span></div>
+            <div>TensorFlow.js: <span id="debugTF">${typeof tf !== 'undefined' ? '✅' : '❌'}</span></div>
+            <div>USE模型: <span id="debugUSE">${typeof use !== 'undefined' ? '✅' : '❌'}</span></div>
+            <div>最后分析: <span id="debugLastAnalysis">无</span></div>
+        </div>
+    `;
+    
+    document.body.appendChild(debugPanel);
+    
+    // 更新调试信息
+    updateDebugInfo();
+    
+    // 定期更新
+    const debugInterval = setInterval(() => {
+        if (debugMode) {
+            updateDebugInfo();
+        } else {
+            clearInterval(debugInterval);
+        }
+    }, 2000);
+}
+
+function updateDebugInfo() {
+    const aiStatus = document.getElementById('debugAIStatus');
+    const memory = document.getElementById('debugMemory');
+    const lastAnalysis = document.getElementById('debugLastAnalysis');
+    
+    if (aiStatus) {
+        const status = window.aiEnhancer ? 
+            (window.aiEnhancer.isAIEnabled() ? '🟢 启用' : '🟡 禁用') : 
+            '🔴 未初始化';
+        aiStatus.textContent = status;
+    }
+    
+    if (memory && 'memory' in performance) {
+        const usedMB = Math.round(performance.memory.usedJSHeapSize / 1024 / 1024);
+        memory.textContent = `${usedMB}MB`;
+    }
+    
+    if (lastAnalysis && app && app.currentAnalysis) {
+        const analysisInfo = app.currentAnalysis.aiEnhanced ? 
+            `AI分析 (${Math.round(app.currentAnalysis.aiConfidence * 100)}%)` : 
+            '传统分析';
+        lastAnalysis.textContent = analysisInfo;
+    }
+}
+
 // 导出主要类（如果需要模块化使用）
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { ResumeScoreApp, PerformanceMonitor, initializeApp };
+    module.exports = { 
+        ResumeScoreApp, 
+        PerformanceMonitor, 
+        initializeApp,
+        toggleDebugMode,
+        warmupAIModel
+    };
 }
+
+// 版本信息
+console.log(`
+🎓 简历评分工具 AI增强版
+版本: 2.0.0
+特性: 
+- ✅ 传统算法分析
+- ✅ AI智能分析 (TensorFlow.js + Universal Sentence Encoder)
+- ✅ 专精识别与加成
+- ✅ 智能岗位推荐
+- ✅ 响应式设计
+- ✅ 深色模式
+- ✅ 多语言支持
+- ✅ 性能监控
+- ✅ 调试模式
+
+快捷键:
+- Ctrl+U: 上传文件
+- Ctrl+Enter: 开始分析
+- Ctrl+E: 导出报告
+- Ctrl+I: 切换AI模式
+- Ctrl+Shift+D: 调试模式
+- F1: 显示快捷键
+- ESC: 关闭弹窗
+
+GitHub: https://github.com/yourusername/resume-scorer
+`);
